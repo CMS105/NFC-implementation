@@ -1,0 +1,52 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="200dp"
+    android:viewportWidth="200"
+    android:viewportHeight="200">
+    <!-- Background Circle -->
+    <path
+        android:fillColor="#E0F2FE"
+        android:pathData="M100,0C155.2,0 200,44.8 200,100C200,155.2 155.2,200 100,200C44.8,200 0,155.2 0,100C0,44.8 44.8,0 100,0Z" />
+    <!-- Shoulders / Coat -->
+    <path
+        android:fillColor="#1E3A8A"
+        android:pathData="M35,185C35,145 65,135 100,135C135,135 165,145 165,185C165,195 150,200 100,200C50,200 35,195 35,185Z" />
+    <!-- Shirt / Collar -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M82,135L100,165L118,135Z" />
+    <!-- Tie -->
+    <path
+        android:fillColor="#DC2626"
+        android:pathData="M95,142L105,142L103,175L100,180L97,175Z" />
+    <!-- Neck -->
+    <path
+        android:fillColor="#F0B58D"
+        android:pathData="M85,115H115V140H85Z" />
+    <!-- Face -->
+    <path
+        android:fillColor="#F3C3A0"
+        android:pathData="M65,70C65,45 80,40 100,40C120,40 135,45 135,70C135,95 120,120 100,120C80,120 65,95 65,70Z" />
+    <!-- Ears -->
+    <path
+        android:fillColor="#F0B58D"
+        android:pathData="M60,70C60,65 65,65 65,75C65,85 60,85 60,70ZM140,70C140,65 135,65 135,75C135,85 140,85 140,70Z" />
+    <!-- Hair -->
+    <path
+        android:fillColor="#1E293B"
+        android:pathData="M62,65C60,45 75,30 100,30C125,30 140,45 138,65C132,50 120,45 100,45C80,45 68,50 62,65Z" />
+    <!-- Mustache -->
+    <path
+        android:fillColor="#1E293B"
+        android:pathData="M80,95C90,92 98,96 100,98C102,96 110,92 120,95C122,98 112,104 100,100C88,104 78,98 80,95Z" />
+    <!-- Eyes -->
+    <path
+        android:fillColor="#0F172A"
+        android:pathData="M80,72A4,4 0 1,1 72,72A4,4 0 1,1 80,72ZM128,72A4,4 0 1,1 120,72A4,4 0 1,1 128,72Z" />
+    <!-- Eyebrows -->
+    <path
+        android:fillColor="#1E293B"
+        android:pathData="M70,64C75,62 82,63 85,65M115,65C118,63 125,62 130,64"
+        android:strokeColor="#1E293B"
+        android:strokeWidth="3" />
+</vector>

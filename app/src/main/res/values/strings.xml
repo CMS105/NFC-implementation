@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">Gas Seva NFC Identity Reader</string>
+    <string name="brand_name">Gas Seva</string>
+    <string name="app_tagline">NFC Passbook Verification System</string>
+    <string name="tap_passbook_title">Tap Customer NFC Passbook</string>
+    <string name="tap_passbook_instructions">Hold the back of your phone near the 13.56 MHz NFC sticker on the customer\'s LPG passbook</string>
+    <string name="customer_verified">CUSTOMER VERIFIED</string>
+    <string name="label_name">Name</string>
+    <string name="label_customer_id">Customer ID</string>
+    <string name="btn_back_to_scan">Back to Scan</string>
+    <string name="btn_retry_scan">Try Scanning Again</string>
+    <string name="nfc_status_ready">NFC Scanner Ready</string>
+    <string name="nfc_status_disabled">NFC is Disabled</string>
+    <string name="nfc_status_unsupported">NFC Not Supported on Device</string>
+    <string name="enable_nfc_btn">Enable NFC in Settings</string>
+    <string name="simulated_scan_title">Test &amp; Demo Scanning</string>
+</resources>
