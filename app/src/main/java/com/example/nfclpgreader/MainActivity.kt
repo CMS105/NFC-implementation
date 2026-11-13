@@ -184,7 +184,7 @@ fun GasSevaApp(
                         is ScanUiState.Error -> {
                             ScanFailedScreen(
                                 errorMessage = state.message,
-                                onTryAgain = { viewModel.resetScan() },
+                                onTryAgain = { viewModel.navigateTo(AppScreen.Home) },
                                 onManualLookup = { viewModel.navigateTo(AppScreen.SearchCustomer) }
                             )
                         }
