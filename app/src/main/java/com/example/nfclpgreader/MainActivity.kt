@@ -11,18 +11,26 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.example.nfclpgreader.nfc.NfcManager
 import com.example.nfclpgreader.nfc.NfcStatus
 import com.example.nfclpgreader.ui.components.ErrorCard
+import com.example.nfclpgreader.ui.components.ScanPhase
 import com.example.nfclpgreader.ui.screens.CustomerProfileScreen
 import com.example.nfclpgreader.ui.screens.ScanScreen
 import com.example.nfclpgreader.ui.theme.BackgroundWhite
 import com.example.nfclpgreader.ui.theme.NFCLPGreaderTheme
 import com.example.nfclpgreader.ui.viewmodel.MainViewModel
 import com.example.nfclpgreader.ui.viewmodel.ScanUiState
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
@@ -100,38 +108,74 @@ fun GasSevaApp(
     onOpenNfcSettings: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var celebrated by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
-    Crossfade(targetState = uiState, label = "screen_transition") { state ->
-        when (state) {
-            is ScanUiState.Idle -> {
-                ScanScreen(
-                    nfcStatus = state.nfcStatus,
-                    onOpenNfcSettings = onOpenNfcSettings,
-                    onSimulateScan = { rawInput ->
-                        viewModel.processRawInput(rawInput)
-                    }
-                )
-            }
-            is ScanUiState.Reading -> {
-                ScanScreen(
-                    nfcStatus = NfcStatus.Ready,
-                    onOpenNfcSettings = onOpenNfcSettings,
-                    onSimulateScan = { rawInput ->
-                        viewModel.processRawInput(rawInput)
-                    }
-                )
-            }
-            is ScanUiState.Success -> {
-                CustomerProfileScreen(
-                    customer = state.customer,
-                    onBackToScan = { viewModel.resetScan() }
-                )
-            }
-            is ScanUiState.Error -> {
-                ErrorCard(
-                    errorMessage = state.message,
-                    onRetry = { viewModel.resetScan() }
-                )
+    LaunchedEffect(uiState) {
+        celebrated = false
+    }
+
+    val showProfile = uiState is ScanUiState.Success && celebrated
+
+    Crossfade(targetState = showProfile, label = "screen_transition") { displayProfile ->
+        if (displayProfile && uiState is ScanUiState.Success) {
+            CustomerProfileScreen(
+                customer = (uiState as ScanUiState.Success).customer,
+                onBackToScan = {
+                    celebrated = false
+                    viewModel.resetScan()
+                }
+            )
+        } else {
+            when (val state = uiState) {
+                is ScanUiState.Idle -> {
+                    ScanScreen(
+                        nfcStatus = state.nfcStatus,
+                        scanPhase = ScanPhase.Idle,
+                        onOpenNfcSettings = onOpenNfcSettings,
+                        onSimulateScan = { rawInput ->
+                            viewModel.processRawInput(rawInput)
+                        }
+                    )
+                }
+                is ScanUiState.Reading -> {
+                    ScanScreen(
+                        nfcStatus = NfcStatus.Ready,
+                        scanPhase = ScanPhase.Reading,
+                        onOpenNfcSettings = onOpenNfcSettings,
+                        onSimulateScan = { rawInput ->
+                            viewModel.processRawInput(rawInput)
+                        }
+                    )
+                }
+                is ScanUiState.Success -> {
+                    ScanScreen(
+                        nfcStatus = NfcStatus.Ready,
+                        scanPhase = ScanPhase.Success,
+                        successCustomerId = state.customer.customerId,
+                        onOpenNfcSettings = onOpenNfcSettings,
+                        onSimulateScan = { rawInput ->
+                            viewModel.processRawInput(rawInput)
+                        },
+                        onResolved = { p ->
+                            if (p == ScanPhase.Success) {
+                                scope.launch {
+                                    delay(900)
+                                    celebrated = true
+                                }
+                            }
+                        }
+                    )
+                }
+                is ScanUiState.Error -> {
+                    ErrorCard(
+                        errorMessage = state.message,
+                        onRetry = {
+                            celebrated = false
+                            viewModel.resetScan()
+                        }
+                    )
+                }
             }
         }
     }

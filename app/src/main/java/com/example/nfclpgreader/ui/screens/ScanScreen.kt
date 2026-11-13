@@ -24,7 +24,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Nfc
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -41,20 +40,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.nfclpgreader.R
 import com.example.nfclpgreader.data.SampleCustomerData
 import com.example.nfclpgreader.nfc.NfcStatus
 import com.example.nfclpgreader.ui.components.GasSevaHeader
-import com.example.nfclpgreader.ui.components.NfcScanningAnimation
 import com.example.nfclpgreader.ui.components.NfcStatusCard
+import com.example.nfclpgreader.ui.components.ScanPhase
+import com.example.nfclpgreader.ui.components.ScanStage
 import com.example.nfclpgreader.ui.theme.BackgroundWhite
 import com.example.nfclpgreader.ui.theme.CardBorder
-import com.example.nfclpgreader.ui.theme.GasSevaGreen
 import com.example.nfclpgreader.ui.theme.GasSevaNavy
 import com.example.nfclpgreader.ui.theme.SurfaceOffWhite
 import com.example.nfclpgreader.ui.theme.TextPrimary
@@ -64,9 +61,12 @@ import com.example.nfclpgreader.ui.theme.TextSecondary
 @Composable
 fun ScanScreen(
     nfcStatus: NfcStatus,
-    onOpenNfcSettings: () -> Unit,
-    onSimulateScan: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    scanPhase: ScanPhase = ScanPhase.Idle,
+    successCustomerId: String = "",
+    onOpenNfcSettings: () -> Unit = {},
+    onSimulateScan: (String) -> Unit = {},
+    onResolved: (ScanPhase) -> Unit = {}
 ) {
     var showDemoSection by remember { mutableStateOf(false) }
 
@@ -94,27 +94,18 @@ fun ScanScreen(
                     onOpenNfcSettings = onOpenNfcSettings
                 )
 
-                Spacer(modifier = Modifier.height(28.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
-                // Pulsing NFC scanning graphic
-                NfcScanningAnimation(isScanning = nfcStatus is NfcStatus.Ready)
-
-                Spacer(modifier = Modifier.height(28.dp))
-
-                // Action Title
-                Text(
-                    text = stringResource(id = R.string.tap_passbook_title),
-                    style = MaterialTheme.typography.headlineMedium.copy(
-                        color = GasSevaNavy,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 22.sp
-                    ),
-                    textAlign = TextAlign.Center
+                // Flame Ring Burner Scanner Component
+                ScanStage(
+                    phase = scanPhase,
+                    successHint = successCustomerId,
+                    onResolved = onResolved
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                // Scanning Instructions Card
+                // Instructions Card
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
@@ -122,29 +113,29 @@ fun ScanScreen(
                     border = CardBorder.let { androidx.compose.foundation.BorderStroke(1.dp, it) }
                 ) {
                     Row(
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.padding(14.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
                             imageVector = Icons.Default.Info,
                             contentDescription = null,
                             tint = GasSevaNavy,
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(22.dp)
                         )
-                        Spacer(modifier = Modifier.width(12.dp))
+                        Spacer(modifier = Modifier.width(10.dp))
                         Text(
-                            text = stringResource(id = R.string.tap_passbook_instructions),
+                            text = "Hold the back of your phone near the 13.56 MHz NFC sticker on the customer's LPG passbook.",
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 color = TextSecondary,
-                                fontSize = 13.5.sp,
-                                lineHeight = 19.sp
+                                fontSize = 13.sp,
+                                lineHeight = 18.sp
                             )
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             // Demo / Test scan panel for emulator & device testing
             Column(
