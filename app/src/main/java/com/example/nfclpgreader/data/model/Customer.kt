@@ -4,10 +4,11 @@ import androidx.annotation.DrawableRes
 
 /**
  * Customer entity representing an LPG passbook holder.
- * Strictly holds only customer ID, full name, and profile photograph resource ID.
+ * Holds only customer ID, full name, and profile photograph resource ID or local file path.
  */
 data class Customer(
     val customerId: String,
     val fullName: String,
-    @field:DrawableRes val photoResId: Int
+    @field:DrawableRes val photoResId: Int = 0,
+    val photoPath: String = ""
 )

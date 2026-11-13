@@ -41,6 +41,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.nfclpgreader.R
 import com.example.nfclpgreader.data.model.Customer
 import com.example.nfclpgreader.ui.components.GasSevaHeader
@@ -132,14 +133,26 @@ fun CustomerProfileScreen(
                                 .background(SurfaceOffWhite),
                             contentAlignment = Alignment.Center
                         ) {
-                            Image(
-                                painter = painterResource(id = customer.photoResId),
-                                contentDescription = "Photograph of ${customer.fullName}",
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .clip(CircleShape)
-                            )
+                            if (customer.photoPath.isNotEmpty()) {
+                                AsyncImage(
+                                    model = customer.photoPath,
+                                    contentDescription = "Photograph of ${customer.fullName}",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clip(CircleShape)
+                                )
+                            } else {
+                                val drawableId = if (customer.photoResId != 0) customer.photoResId else R.drawable.ic_avatar_ravi
+                                Image(
+                                    painter = painterResource(id = drawableId),
+                                    contentDescription = "Photograph of ${customer.fullName}",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clip(CircleShape)
+                                )
+                            }
                         }
 
                         Spacer(modifier = Modifier.height(24.dp))
@@ -214,7 +227,7 @@ fun CustomerProfileScreen(
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            // Back to Scan Button
+            // Back Button
             Button(
                 onClick = onBackToScan,
                 colors = ButtonDefaults.buttonColors(
@@ -238,7 +251,7 @@ fun CustomerProfileScreen(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = stringResource(id = R.string.btn_back_to_scan),
+                        text = "Back",
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp

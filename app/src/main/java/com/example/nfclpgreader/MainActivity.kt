@@ -24,9 +24,13 @@ import com.example.nfclpgreader.nfc.NfcStatus
 import com.example.nfclpgreader.ui.components.ErrorCard
 import com.example.nfclpgreader.ui.components.ScanPhase
 import com.example.nfclpgreader.ui.screens.CustomerProfileScreen
+import com.example.nfclpgreader.ui.screens.HomeScreen
+import com.example.nfclpgreader.ui.screens.RegisterCustomerScreen
 import com.example.nfclpgreader.ui.screens.ScanScreen
+import com.example.nfclpgreader.ui.screens.SearchCustomerScreen
 import com.example.nfclpgreader.ui.theme.BackgroundWhite
 import com.example.nfclpgreader.ui.theme.NFCLPGreaderTheme
+import com.example.nfclpgreader.ui.viewmodel.AppScreen
 import com.example.nfclpgreader.ui.viewmodel.MainViewModel
 import com.example.nfclpgreader.ui.viewmodel.ScanUiState
 import kotlinx.coroutines.delay
@@ -43,7 +47,6 @@ class MainActivity : ComponentActivity() {
 
         nfcManager = NfcManager(this)
 
-        // Process NFC intent if app was launched directly by tapping an NFC tag
         if (intent != null) {
             viewModel.processNfcIntent(intent)
         }
@@ -68,14 +71,11 @@ class MainActivity : ComponentActivity() {
         val nfcStatus = nfcManager.getNfcStatus()
         viewModel.updateNfcStatus(nfcStatus)
 
-        // Enable Reader mode for high-performance background reading
         nfcManager.enableReaderMode(this) { tag ->
             runOnUiThread {
                 viewModel.processNfcTag(tag)
             }
         }
-
-        // Enable traditional foreground dispatch fallback
         nfcManager.enableForegroundDispatch(this)
     }
 
@@ -107,7 +107,10 @@ fun GasSevaApp(
     viewModel: MainViewModel,
     onOpenNfcSettings: () -> Unit
 ) {
+    val currentScreen by viewModel.currentScreen.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
+    val searchError by viewModel.searchError.collectAsState()
+
     var celebrated by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
@@ -115,67 +118,93 @@ fun GasSevaApp(
         celebrated = false
     }
 
-    val showProfile = uiState is ScanUiState.Success && celebrated
-
-    Crossfade(targetState = showProfile, label = "screen_transition") { displayProfile ->
-        if (displayProfile && uiState is ScanUiState.Success) {
-            CustomerProfileScreen(
-                customer = (uiState as ScanUiState.Success).customer,
-                onBackToScan = {
-                    celebrated = false
-                    viewModel.resetScan()
-                }
-            )
-        } else {
-            when (val state = uiState) {
-                is ScanUiState.Idle -> {
-                    ScanScreen(
-                        nfcStatus = state.nfcStatus,
-                        scanPhase = ScanPhase.Idle,
-                        onOpenNfcSettings = onOpenNfcSettings,
-                        onSimulateScan = { rawInput ->
-                            viewModel.processRawInput(rawInput)
-                        }
-                    )
-                }
-                is ScanUiState.Reading -> {
-                    ScanScreen(
-                        nfcStatus = NfcStatus.Ready,
-                        scanPhase = ScanPhase.Reading,
-                        onOpenNfcSettings = onOpenNfcSettings,
-                        onSimulateScan = { rawInput ->
-                            viewModel.processRawInput(rawInput)
-                        }
-                    )
-                }
-                is ScanUiState.Success -> {
-                    ScanScreen(
-                        nfcStatus = NfcStatus.Ready,
-                        scanPhase = ScanPhase.Success,
-                        successCustomerId = state.customer.customerId,
-                        onOpenNfcSettings = onOpenNfcSettings,
-                        onSimulateScan = { rawInput ->
-                            viewModel.processRawInput(rawInput)
-                        },
-                        onResolved = { p ->
-                            if (p == ScanPhase.Success) {
-                                scope.launch {
-                                    delay(900)
-                                    celebrated = true
-                                }
-                            }
-                        }
-                    )
-                }
-                is ScanUiState.Error -> {
-                    ErrorCard(
-                        errorMessage = state.message,
-                        onRetry = {
+    Crossfade(targetState = currentScreen, label = "app_screen_transition") { screen ->
+        when (screen) {
+            is AppScreen.Home -> {
+                HomeScreen(
+                    onNavigateToScan = { viewModel.navigateTo(AppScreen.ScanNfc) },
+                    onNavigateToSearch = { viewModel.navigateTo(AppScreen.SearchCustomer) }
+                )
+            }
+            is AppScreen.ScanNfc -> {
+                val showProfile = uiState is ScanUiState.Success && celebrated
+                if (showProfile && uiState is ScanUiState.Success) {
+                    CustomerProfileScreen(
+                        customer = (uiState as ScanUiState.Success).customer,
+                        onBackToScan = {
                             celebrated = false
-                            viewModel.resetScan()
+                            viewModel.navigateTo(AppScreen.Home)
                         }
                     )
+                } else {
+                    when (val state = uiState) {
+                        is ScanUiState.Idle -> {
+                            ScanScreen(
+                                nfcStatus = state.nfcStatus,
+                                scanPhase = ScanPhase.Idle,
+                                onOpenNfcSettings = onOpenNfcSettings,
+                                onSimulateScan = { rawInput -> viewModel.processRawInput(rawInput) }
+                            )
+                        }
+                        is ScanUiState.Reading -> {
+                            ScanScreen(
+                                nfcStatus = NfcStatus.Ready,
+                                scanPhase = ScanPhase.Reading,
+                                onOpenNfcSettings = onOpenNfcSettings,
+                                onSimulateScan = { rawInput -> viewModel.processRawInput(rawInput) }
+                            )
+                        }
+                        is ScanUiState.Success -> {
+                            ScanScreen(
+                                nfcStatus = NfcStatus.Ready,
+                                scanPhase = ScanPhase.Success,
+                                successCustomerId = state.customer.customerId,
+                                onOpenNfcSettings = onOpenNfcSettings,
+                                onSimulateScan = { rawInput -> viewModel.processRawInput(rawInput) },
+                                onResolved = { p ->
+                                    if (p == ScanPhase.Success) {
+                                        scope.launch {
+                                            delay(900)
+                                            celebrated = true
+                                        }
+                                    }
+                                }
+                            )
+                        }
+                        is ScanUiState.NewTag -> {
+                            // Handled by AppScreen.RegisterCustomer
+                        }
+                        is ScanUiState.Error -> {
+                            ErrorCard(
+                                errorMessage = state.message,
+                                onRetry = { viewModel.resetScan() }
+                            )
+                        }
+                    }
                 }
+            }
+            is AppScreen.RegisterCustomer -> {
+                RegisterCustomerScreen(
+                    scannedTagValue = screen.scannedTagValue,
+                    suggestedCustomerId = screen.suggestedCustomerId,
+                    onSaveCustomer = { id, name, photoUri, tagVal ->
+                        viewModel.registerCustomer(id, name, photoUri, tagVal)
+                    },
+                    onBack = { viewModel.navigateTo(AppScreen.Home) }
+                )
+            }
+            is AppScreen.SearchCustomer -> {
+                SearchCustomerScreen(
+                    onSearch = { customerId -> viewModel.searchCustomerById(customerId) },
+                    onBack = { viewModel.navigateTo(AppScreen.Home) },
+                    searchError = searchError
+                )
+            }
+            is AppScreen.CustomerDetails -> {
+                CustomerProfileScreen(
+                    customer = screen.customer,
+                    onBackToScan = { viewModel.navigateTo(AppScreen.Home) }
+                )
             }
         }
     }
