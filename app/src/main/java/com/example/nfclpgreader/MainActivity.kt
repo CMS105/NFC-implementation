@@ -21,11 +21,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.example.nfclpgreader.nfc.NfcManager
 import com.example.nfclpgreader.nfc.NfcStatus
-import com.example.nfclpgreader.ui.components.ErrorCard
 import com.example.nfclpgreader.ui.components.ScanPhase
 import com.example.nfclpgreader.ui.screens.CustomerProfileScreen
 import com.example.nfclpgreader.ui.screens.HomeScreen
 import com.example.nfclpgreader.ui.screens.RegisterCustomerScreen
+import com.example.nfclpgreader.ui.screens.ScanFailedScreen
 import com.example.nfclpgreader.ui.screens.ScanScreen
 import com.example.nfclpgreader.ui.screens.SearchCustomerScreen
 import com.example.nfclpgreader.ui.theme.BackgroundWhite
@@ -182,9 +182,10 @@ fun GasSevaApp(
                             // Handled by AppScreen.RegisterCustomer
                         }
                         is ScanUiState.Error -> {
-                            ErrorCard(
+                            ScanFailedScreen(
                                 errorMessage = state.message,
-                                onRetry = { viewModel.resetScan() }
+                                onTryAgain = { viewModel.resetScan() },
+                                onManualLookup = { viewModel.navigateTo(AppScreen.SearchCustomer) }
                             )
                         }
                     }
