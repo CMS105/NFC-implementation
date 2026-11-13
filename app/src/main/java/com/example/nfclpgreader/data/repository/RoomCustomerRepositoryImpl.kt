@@ -6,7 +6,7 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import com.example.nfclpgreader.R
 import com.example.nfclpgreader.data.SampleCustomerData
-import com.example.nfclpgreader.data.local.AppDatabase
+import com.example.nfclpgreader.data.local.AppDatabaseHelper
 import com.example.nfclpgreader.data.local.entity.CustomerEntity
 import com.example.nfclpgreader.data.local.entity.NfcTagEntity
 import com.example.nfclpgreader.data.model.Customer
@@ -16,23 +16,20 @@ import java.io.File
 import java.io.FileOutputStream
 
 /**
- * Room database implementation of CustomerRepository with persistent local photo file storage.
+ * SQLite database implementation of CustomerRepository with persistent local photo file storage.
  */
 class RoomCustomerRepositoryImpl(
     private val context: Context,
-    private val database: AppDatabase = AppDatabase.getInstance(context)
+    private val dbHelper: AppDatabaseHelper = AppDatabaseHelper(context)
 ) : CustomerRepository {
-
-    private val dao = database.customerDao()
 
     override suspend fun getCustomerById(customerId: String): Result<Customer> = withContext(Dispatchers.IO) {
         val sanitizedId = customerId.trim().uppercase()
-        val entity = dao.getCustomerById(sanitizedId)
+        val entity = dbHelper.getCustomerById(sanitizedId)
 
         if (entity != null) {
             Result.success(mapEntityToCustomer(entity))
         } else {
-            // Fallback to sample data if database callback is still executing
             val sample = SampleCustomerData.customers.find { it.customerId.uppercase() == sanitizedId }
             if (sample != null) {
                 Result.success(sample)
@@ -44,18 +41,15 @@ class RoomCustomerRepositoryImpl(
 
     override suspend fun getCustomerByTagValue(tagValue: String): Result<Customer> = withContext(Dispatchers.IO) {
         val sanitizedTag = tagValue.trim()
-        val entity = dao.getCustomerByTagValue(sanitizedTag)
+        val entity = dbHelper.getCustomerByTagValue(sanitizedTag)
 
         if (entity != null) {
             return@withContext Result.success(mapEntityToCustomer(entity))
         }
 
-        // Try extracting Customer ID from tag NDEF value (e.g. CUS001)
-        val cusPattern = Regex("(?i)\\bCUS\\d+\\b")
-        val match = cusPattern.find(sanitizedTag)?.value?.uppercase()
-
+        val match = Regex("(?i)\\bCUS\\d+\\b").find(sanitizedTag)?.value?.uppercase()
         if (match != null) {
-            val byId = dao.getCustomerById(match)
+            val byId = dbHelper.getCustomerById(match)
             if (byId != null) {
                 return@withContext Result.success(mapEntityToCustomer(byId))
             }
@@ -70,12 +64,12 @@ class RoomCustomerRepositoryImpl(
 
     override suspend fun isTagRegistered(tagValue: String): Boolean = withContext(Dispatchers.IO) {
         val sanitizedTag = tagValue.trim()
-        val tagEntity = dao.getNfcTagByValue(sanitizedTag)
+        val tagEntity = dbHelper.getNfcTagByValue(sanitizedTag)
         if (tagEntity != null) return@withContext true
 
         val match = Regex("(?i)\\bCUS\\d+\\b").find(sanitizedTag)?.value?.uppercase()
         if (match != null) {
-            val existingCustomer = dao.getCustomerById(match)
+            val existingCustomer = dbHelper.getCustomerById(match)
             if (existingCustomer != null) return@withContext true
             val sample = SampleCustomerData.customers.find { it.customerId.uppercase() == match }
             if (sample != null) return@withContext true
@@ -101,13 +95,11 @@ class RoomCustomerRepositoryImpl(
             return@withContext Result.failure(IllegalArgumentException("Customer full name cannot be empty."))
         }
 
-        // Prevent duplicate customer ID registration
-        val existingCustomer = dao.getCustomerById(sanitizedId)
+        val existingCustomer = dbHelper.getCustomerById(sanitizedId)
         if (existingCustomer != null) {
             return@withContext Result.failure(IllegalStateException("Customer ID '$sanitizedId' is already registered."))
         }
 
-        // Save photo persistently to app internal files directory
         val savedPhotoPath = savePhotoToPersistentStorage(context, photoSourceUri, sanitizedId)
 
         val customerEntity = CustomerEntity(
@@ -121,12 +113,11 @@ class RoomCustomerRepositoryImpl(
             customerId = sanitizedId
         )
 
-        try {
-            dao.registerCustomerWithTag(customerEntity, nfcTagEntity)
-            val created = mapEntityToCustomer(customerEntity)
-            Result.success(created)
-        } catch (e: Exception) {
-            Result.failure(IllegalStateException("Failed to save customer to Room database: ${e.localizedMessage}"))
+        val success = dbHelper.insertCustomerWithTag(customerEntity, nfcTagEntity)
+        if (success) {
+            Result.success(mapEntityToCustomer(customerEntity))
+        } else {
+            Result.failure(IllegalStateException("Failed to save customer to local database."))
         }
     }
 

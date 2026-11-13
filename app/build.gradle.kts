@@ -48,10 +48,9 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
 
-    // Room Database
+    // Room Runtime & KTX (No compiler plugin required)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
-    annotationProcessor(libs.androidx.room.compiler)
 
     // Image loading with Coil
     implementation(libs.coil.compose)
