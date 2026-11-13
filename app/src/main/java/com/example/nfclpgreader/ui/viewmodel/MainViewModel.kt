@@ -83,8 +83,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (extractedId != null) {
             lookupTagOrNavigate(tagValue = input, extractedId = extractedId)
         } else {
-            _uiState.value = ScanUiState.Error("Invalid input format. Unable to extract valid Customer ID.")
+            _uiState.value = ScanUiState.Error("Unable to decrypt NDEF payload or tag signature mismatch. The cylinder tag may be damaged, unformatted, or non-compliant.")
         }
+    }
+
+    fun simulateError() {
+        _uiState.value = ScanUiState.Error("Unable to decrypt NDEF payload or tag signature mismatch. The cylinder tag may be damaged, unformatted, or non-compliant.")
     }
 
     private fun handleExtractionResult(result: Result<String>, rawInput: String) {
@@ -93,7 +97,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 lookupTagOrNavigate(tagValue = if (rawInput.isNotEmpty()) rawInput else customerId, extractedId = customerId)
             },
             onFailure = { throwable ->
-                val errorMessage = throwable.localizedMessage ?: "Invalid or empty NFC tag scanned."
+                val errorMessage = throwable.localizedMessage ?: "Unable to decrypt NDEF payload or tag signature mismatch. The cylinder tag may be damaged, unformatted, or non-compliant."
                 _uiState.value = ScanUiState.Error(errorMessage)
             }
         )

@@ -129,7 +129,7 @@ fun GasSevaApp(
                     },
                     onSimulateScanFailed = {
                         viewModel.navigateTo(AppScreen.ScanNfc)
-                        viewModel.processRawInput("https://example.com/customer/CUS999")
+                        viewModel.simulateError()
                     }
                 )
             }
