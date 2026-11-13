@@ -54,6 +54,7 @@ import com.example.nfclpgreader.ui.theme.GasSevaNavy
 import com.example.nfclpgreader.ui.theme.SurfaceOffWhite
 import com.example.nfclpgreader.ui.theme.TextPrimary
 import com.example.nfclpgreader.ui.theme.TextSecondary
+import java.io.File
 
 @Composable
 fun CustomerProfileScreen(
@@ -124,7 +125,7 @@ fun CustomerProfileScreen(
                             .padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        // 1. Large Customer Photograph Frame
+                        // 1. Large Customer Photograph Frame (Guaranteed never empty - falls back to person avatar)
                         Box(
                             modifier = Modifier
                                 .size(160.dp)
@@ -133,7 +134,8 @@ fun CustomerProfileScreen(
                                 .background(SurfaceOffWhite),
                             contentAlignment = Alignment.Center
                         ) {
-                            if (customer.photoPath.isNotEmpty()) {
+                            val hasValidFile = customer.photoPath.isNotEmpty() && File(customer.photoPath).exists()
+                            if (hasValidFile) {
                                 AsyncImage(
                                     model = customer.photoPath,
                                     contentDescription = "Photograph of ${customer.fullName}",
@@ -143,7 +145,14 @@ fun CustomerProfileScreen(
                                         .clip(CircleShape)
                                 )
                             } else {
-                                val drawableId = if (customer.photoResId != 0) customer.photoResId else R.drawable.ic_avatar_ravi
+                                val drawableId = when {
+                                    customer.photoResId != 0 -> customer.photoResId
+                                    customer.customerId.endsWith("002") -> R.drawable.ic_avatar_priya
+                                    customer.customerId.endsWith("003") -> R.drawable.ic_avatar_amitabh
+                                    customer.customerId.endsWith("004") -> R.drawable.ic_avatar_sunita
+                                    customer.customerId.endsWith("005") -> R.drawable.ic_avatar_rajesh
+                                    else -> R.drawable.ic_avatar_ravi
+                                }
                                 Image(
                                     painter = painterResource(id = drawableId),
                                     contentDescription = "Photograph of ${customer.fullName}",
