@@ -124,9 +124,11 @@ fun GasSevaApp(
                 HomeScreen(
                     onManualSearchClick = { viewModel.navigateTo(AppScreen.SearchCustomer) },
                     onSimulateScanSuccess = {
+                        viewModel.navigateTo(AppScreen.ScanNfc)
                         viewModel.processRawInput("https://example.com/customer/CUS001")
                     },
                     onSimulateScanFailed = {
+                        viewModel.navigateTo(AppScreen.ScanNfc)
                         viewModel.processRawInput("https://example.com/customer/CUS999")
                     }
                 )
