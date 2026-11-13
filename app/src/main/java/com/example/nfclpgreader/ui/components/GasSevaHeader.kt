@@ -2,6 +2,7 @@ package com.example.nfclpgreader.ui.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -23,8 +24,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.nfclpgreader.R
-import com.example.nfclpgreader.ui.theme.GasSevaGreen
-import com.example.nfclpgreader.ui.theme.GasSevaNavyDark
+import com.example.nfclpgreader.ui.theme.ChampagneGold
+import com.example.nfclpgreader.ui.theme.ObsidianBorder
+import com.example.nfclpgreader.ui.theme.ObsidianSurface
 
 @Composable
 fun GasSevaHeader(
@@ -32,8 +34,9 @@ fun GasSevaHeader(
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
-        color = GasSevaNavyDark,
-        shadowElevation = 4.dp
+        color = ObsidianSurface,
+        shadowElevation = 6.dp,
+        border = androidx.compose.foundation.BorderStroke(1.dp, ObsidianBorder)
     ) {
         Row(
             modifier = Modifier
@@ -44,7 +47,7 @@ fun GasSevaHeader(
             Image(
                 painter = painterResource(id = R.drawable.ic_gas_seva_logo),
                 contentDescription = stringResource(id = R.string.brand_name),
-                modifier = Modifier.size(52.dp)
+                modifier = Modifier.size(48.dp)
             )
 
             Spacer(modifier = Modifier.width(16.dp))
@@ -56,20 +59,21 @@ fun GasSevaHeader(
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
-                            fontSize = 22.sp
+                            fontSize = 20.sp
                         )
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "READER",
+                        text = "SECURE",
                         modifier = Modifier
                             .background(
-                                color = GasSevaGreen,
+                                color = ChampagneGold.copy(alpha = 0.15f),
                                 shape = RoundedCornerShape(4.dp)
                             )
+                            .border(1.dp, ChampagneGold.copy(alpha = 0.4f), RoundedCornerShape(4.dp))
                             .padding(horizontal = 6.dp, vertical = 2.dp),
                         style = MaterialTheme.typography.labelLarge.copy(
-                            color = Color.White,
+                            color = ChampagneGold,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.ExtraBold
                         )
@@ -77,9 +81,9 @@ fun GasSevaHeader(
                 }
 
                 Text(
-                    text = stringResource(id = R.string.app_tagline),
+                    text = "Passbook Identity Ledger",
                     style = MaterialTheme.typography.bodyMedium.copy(
-                        color = Color.White.copy(alpha = 0.85f),
+                        color = Color.White.copy(alpha = 0.7f),
                         fontSize = 12.sp
                     )
                 )
