@@ -24,9 +24,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.nfclpgreader.R
-import com.example.nfclpgreader.ui.theme.ChampagneGold
-import com.example.nfclpgreader.ui.theme.ObsidianBorder
+import com.example.nfclpgreader.ui.theme.CardBorder
 import com.example.nfclpgreader.ui.theme.ObsidianSurface
+import com.example.nfclpgreader.ui.theme.ShiningGold
 
 @Composable
 fun GasSevaHeader(
@@ -36,7 +36,7 @@ fun GasSevaHeader(
         modifier = modifier.fillMaxWidth(),
         color = ObsidianSurface,
         shadowElevation = 6.dp,
-        border = androidx.compose.foundation.BorderStroke(1.dp, ObsidianBorder)
+        border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
     ) {
         Row(
             modifier = Modifier
@@ -67,13 +67,13 @@ fun GasSevaHeader(
                         text = "SECURE",
                         modifier = Modifier
                             .background(
-                                color = ChampagneGold.copy(alpha = 0.15f),
+                                color = ShiningGold.copy(alpha = 0.15f),
                                 shape = RoundedCornerShape(4.dp)
                             )
-                            .border(1.dp, ChampagneGold.copy(alpha = 0.4f), RoundedCornerShape(4.dp))
+                            .border(1.dp, ShiningGold.copy(alpha = 0.5f), RoundedCornerShape(4.dp))
                             .padding(horizontal = 6.dp, vertical = 2.dp),
                         style = MaterialTheme.typography.labelLarge.copy(
-                            color = ChampagneGold,
+                            color = ShiningGold,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.ExtraBold
                         )

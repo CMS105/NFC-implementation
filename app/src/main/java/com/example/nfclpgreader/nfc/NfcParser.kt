@@ -22,6 +22,16 @@ data class ParsedNfcData(
 )
 
 /**
+ * Watermark structure for optional GASSEVA_ORIGIN NDEF records.
+ */
+data class GassevaWatermarkData(
+    val creatorName: String,
+    val creatorId: String,
+    val projectName: String,
+    val copyrightYear: String
+)
+
+/**
  * Utility for parsing NDEF formatted 13.56 MHz NFC tags (e.g. NTAG213, NTAG215).
  * Parses NDEF text records (LPGPASSBOOK, ID:CUS..., NAME:..., CODE:...) and NDEF URI records.
  */
@@ -172,6 +182,35 @@ object NfcParser {
         }
 
         return null
+    }
+
+    /**
+     * Parses optional GASSEVA_ORIGIN NDEF record watermark:
+     * GASSEVA_ORIGIN
+     * CREATOR:M S CHIRAG
+     * CREATOR_ID:CMS105
+     * PROJECT:GasSeva
+     * COPYRIGHT:2026
+     */
+    fun parseGassevaOriginRecord(textBlock: String): GassevaWatermarkData? {
+        val cleaned = textBlock.trim()
+        if (!cleaned.contains("GASSEVA_ORIGIN", ignoreCase = true)) return null
+
+        val creatorMatch = Regex("(?i)\\bCREATOR:\\s*(.+)").find(cleaned)
+        val creatorIdMatch = Regex("(?i)\\bCREATOR_ID:\\s*([A-Za-z0-9_-]+)").find(cleaned)
+        val projectMatch = Regex("(?i)\\bPROJECT:\\s*(.+)").find(cleaned)
+        val copyrightMatch = Regex("(?i)\\bCOPYRIGHT:\\s*(.+)").find(cleaned)
+
+        return if (creatorMatch != null && creatorIdMatch != null) {
+            GassevaWatermarkData(
+                creatorName = creatorMatch.groupValues[1].trim(),
+                creatorId = creatorIdMatch.groupValues[1].trim().uppercase(),
+                projectName = projectMatch?.groupValues?.get(1)?.trim() ?: "GasSeva",
+                copyrightYear = copyrightMatch?.groupValues?.get(1)?.trim() ?: "2026"
+            )
+        } else {
+            null
+        }
     }
 
     /**
