@@ -9,17 +9,34 @@ import org.junit.Test
 class NfcParserTest {
 
     @Test
-    fun testExtractLpgPassbookTextRecord() {
+    fun testExtractLpgPassbookTextRecordWithCode() {
         val textBlock = """
             LPGPASSBOOK
-            ID:CUS004
-            NAME:Rajesh Nair
+            ID:CUS001
+            NAME:M S CHIRAG
+            CODE:YHWP84PENQ
         """.trimIndent()
 
         val parsed = NfcParser.parseLpgPassbookTextRecord(textBlock)
         assertNotNull(parsed)
-        assertEquals("CUS004", parsed?.customerId)
-        assertEquals("Rajesh Nair", parsed?.customerName)
+        assertEquals("CUS001", parsed?.customerId)
+        assertEquals("M S CHIRAG", parsed?.customerName)
+        assertEquals("YHWP84PENQ", parsed?.uniqueNfcCode)
+    }
+
+    @Test
+    fun testExtractLpgPassbookTextRecordWithoutCode() {
+        val textBlock = """
+            LPGPASSBOOK
+            ID:CUS002
+            NAME:DIGANTH
+        """.trimIndent()
+
+        val parsed = NfcParser.parseLpgPassbookTextRecord(textBlock)
+        assertNotNull(parsed)
+        assertEquals("CUS002", parsed?.customerId)
+        assertEquals("DIGANTH", parsed?.customerName)
+        assertNull(parsed?.uniqueNfcCode)
     }
 
     @Test
@@ -52,9 +69,9 @@ class NfcParserTest {
 
     @Test
     fun testExtractCustomerIdCaseInsensitive() {
-        val raw = "cus005"
+        val raw = "cus004"
         val customerId = NfcParser.extractCustomerIdFromString(raw)
-        assertEquals("CUS005", customerId)
+        assertEquals("CUS004", customerId)
     }
 
     @Test
