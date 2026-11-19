@@ -10,5 +10,6 @@ import androidx.room.PrimaryKey
 data class CustomerEntity(
     @PrimaryKey val customerId: String,
     val customerName: String,
-    val photoPath: String
+    val photoPath: String,
+    val uniqueNfcCode: String = ""
 )

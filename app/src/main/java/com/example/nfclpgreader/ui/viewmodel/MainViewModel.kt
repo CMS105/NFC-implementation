@@ -10,14 +10,13 @@ import com.example.nfclpgreader.data.repository.CustomerRepository
 import com.example.nfclpgreader.data.repository.RoomCustomerRepositoryImpl
 import com.example.nfclpgreader.nfc.NfcParser
 import com.example.nfclpgreader.nfc.NfcStatus
+import com.example.nfclpgreader.nfc.ParsedNfcData
+import com.example.nfclpgreader.nfc.UniqueCodeGenerator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-/**
- * Navigation screen destination states for Gas Seva App.
- */
 sealed class AppScreen {
     object Home : AppScreen()
     object ScanNfc : AppScreen()
@@ -27,9 +26,6 @@ sealed class AppScreen {
     data class CustomerDetails(val customer: Customer) : AppScreen()
 }
 
-/**
- * UI State representing the NFC Tag Scanning status.
- */
 sealed class ScanUiState {
     data class Idle(val nfcStatus: NfcStatus = NfcStatus.Ready) : ScanUiState()
     object Reading : ScanUiState()
@@ -73,7 +69,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val result = NfcParser.parseIntentDetailed(intent)
         result.fold(
             onSuccess = { parsedData ->
-                lookupTagOrNavigate(tagValue = parsedData.rawTagValue, extractedId = parsedData.customerId, extractedName = parsedData.customerName)
+                verifyTagData(parsedData)
             },
             onFailure = { throwable ->
                 val errorMessage = throwable.localizedMessage ?: "Invalid or unreadable NFC tag scanned."
@@ -87,7 +83,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val rawTagId = tag.id.joinToString("") { "%02X".format(it) }
         result.fold(
             onSuccess = { parsedData ->
-                lookupTagOrNavigate(tagValue = if (parsedData.rawTagValue.isNotEmpty()) parsedData.rawTagValue else rawTagId, extractedId = parsedData.customerId, extractedName = parsedData.customerName)
+                val tagVal = if (parsedData.rawTagValue.isNotEmpty()) parsedData.rawTagValue else rawTagId
+                verifyTagData(parsedData.copy(rawTagValue = tagVal))
             },
             onFailure = { throwable ->
                 val errorMessage = throwable.localizedMessage ?: "Invalid or unreadable NFC tag scanned."
@@ -99,44 +96,57 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun processRawInput(input: String) {
         val parsed = NfcParser.parseLpgPassbookTextRecord(input)
         if (parsed != null) {
-            lookupTagOrNavigate(tagValue = input, extractedId = parsed.customerId, extractedName = parsed.customerName)
+            verifyTagData(parsed)
             return
         }
 
         val extractedId = NfcParser.extractCustomerIdFromString(input)
         if (extractedId != null) {
-            lookupTagOrNavigate(tagValue = input, extractedId = extractedId, extractedName = null)
+            verifyTagData(ParsedNfcData(customerId = extractedId, rawTagValue = input))
         } else {
-            _uiState.value = ScanUiState.Error("Invalid NFC Passbook. Unable to read valid customer identity data.")
+            _uiState.value = ScanUiState.Error("Invalid NFC Passbook: Unable to read valid customer identity data.")
         }
     }
 
     fun simulateError() {
-        _uiState.value = ScanUiState.Error("Invalid NFC Passbook. Tag payload is unformatted or corrupted.")
+        _uiState.value = ScanUiState.Error("NFC Verification Failed: Tag payload signature or code mismatch.")
     }
 
-    private fun lookupTagOrNavigate(tagValue: String, extractedId: String, extractedName: String? = null) {
+    private fun verifyTagData(parsedData: ParsedNfcData) {
         _uiState.value = ScanUiState.Reading
         viewModelScope.launch {
-            repository.getCustomerByTagValue(tagValue).fold(
+            val customerId = parsedData.customerId
+            val tagCode = parsedData.uniqueNfcCode.orEmpty()
+
+            repository.getCustomerById(customerId).fold(
                 onSuccess = { customer ->
-                    _uiState.value = ScanUiState.Success(customer)
-                },
-                onFailure = {
-                    // Try by Customer ID
-                    repository.getCustomerById(extractedId).fold(
-                        onSuccess = { customer ->
+                    // Case A & B Verification Check:
+                    if (tagCode.isNotEmpty() && customer.uniqueNfcCode.isNotEmpty()) {
+                        if (tagCode.equals(customer.uniqueNfcCode, ignoreCase = true)) {
+                            // Case A: Valid Customer & Matching Code
                             _uiState.value = ScanUiState.Success(customer)
-                        },
-                        onFailure = {
-                            // Tag & ID are not registered -> Navigate to Customer Not Found Screen first
-                            _uiState.value = ScanUiState.NewTag(tagValue = tagValue, extractedId = extractedId, customerName = extractedName)
-                            _currentScreen.value = AppScreen.CustomerNotFound(
-                                customerId = extractedId,
-                                customerName = extractedName,
-                                tagValue = tagValue
+                        } else {
+                            // Case B: Customer ID exists but unique code does NOT match
+                            _uiState.value = ScanUiState.Error(
+                                "NFC Verification Failed: Tag unique code ($tagCode) does not match database record for ${customer.fullName}."
                             )
                         }
+                    } else {
+                        // Legacy or direct match fallback
+                        _uiState.value = ScanUiState.Success(customer)
+                    }
+                },
+                onFailure = {
+                    // Case C: Customer ID does not exist in database
+                    _uiState.value = ScanUiState.NewTag(
+                        tagValue = parsedData.rawTagValue,
+                        extractedId = customerId,
+                        customerName = parsedData.customerName
+                    )
+                    _currentScreen.value = AppScreen.CustomerNotFound(
+                        customerId = customerId,
+                        customerName = parsedData.customerName,
+                        tagValue = parsedData.rawTagValue
                     )
                 }
             )
@@ -175,7 +185,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         tagValue: String
     ) {
         viewModelScope.launch {
-            repository.registerCustomer(customerId, fullName, photoUriStr, tagValue).fold(
+            val uniqueCode = UniqueCodeGenerator.generateCode()
+            repository.registerCustomer(customerId, fullName, photoUriStr, tagValue, uniqueCode).fold(
                 onSuccess = { newCustomer ->
                     _currentScreen.value = AppScreen.CustomerDetails(newCustomer)
                 },

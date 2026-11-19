@@ -10,13 +10,14 @@ import com.example.nfclpgreader.data.local.AppDatabaseHelper
 import com.example.nfclpgreader.data.local.entity.CustomerEntity
 import com.example.nfclpgreader.data.local.entity.NfcTagEntity
 import com.example.nfclpgreader.data.model.Customer
+import com.example.nfclpgreader.nfc.UniqueCodeGenerator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 
 /**
- * SQLite database implementation of CustomerRepository with persistent local photo file storage.
+ * SQLite database implementation of CustomerRepository with persistent local photo file storage and unique NFC codes.
  */
 class RoomCustomerRepositoryImpl(
     private val context: Context,
@@ -82,11 +83,13 @@ class RoomCustomerRepositoryImpl(
         customerId: String,
         fullName: String,
         photoSourceUri: String,
-        tagValue: String
+        tagValue: String,
+        uniqueNfcCode: String
     ): Result<Customer> = withContext(Dispatchers.IO) {
         val sanitizedId = customerId.trim().uppercase()
         val sanitizedName = fullName.trim()
         val sanitizedTag = tagValue.trim()
+        val finalCode = if (uniqueNfcCode.trim().isNotEmpty()) uniqueNfcCode.trim().uppercase() else UniqueCodeGenerator.generateCode()
 
         if (sanitizedId.isEmpty()) {
             return@withContext Result.failure(IllegalArgumentException("Customer ID cannot be empty."))
@@ -105,7 +108,8 @@ class RoomCustomerRepositoryImpl(
         val customerEntity = CustomerEntity(
             customerId = sanitizedId,
             customerName = sanitizedName,
-            photoPath = savedPhotoPath
+            photoPath = savedPhotoPath,
+            uniqueNfcCode = finalCode
         )
 
         val nfcTagEntity = NfcTagEntity(
@@ -121,19 +125,24 @@ class RoomCustomerRepositoryImpl(
         }
     }
 
+    override suspend fun bindTagToCustomer(tagValue: String, customerId: String): Boolean = withContext(Dispatchers.IO) {
+        dbHelper.bindTagToCustomer(tagValue, customerId)
+    }
+
     private fun mapEntityToCustomer(entity: CustomerEntity): Customer {
         val resDrawableId = getDrawableIdFromPath(entity.photoPath)
         return Customer(
             customerId = entity.customerId,
             fullName = entity.customerName,
             photoResId = resDrawableId,
-            photoPath = if (resDrawableId == 0) entity.photoPath else ""
+            photoPath = if (resDrawableId == 0) entity.photoPath else "",
+            uniqueNfcCode = entity.uniqueNfcCode
         )
     }
 
     private fun getDrawableIdFromPath(path: String): Int {
         return when {
-            path.contains("avatar_ravi") || path.contains("CUS001") -> R.drawable.ic_avatar_ravi
+            path.contains("photo_cus001") || path.contains("CUS001") -> R.drawable.photo_cus001
             path.contains("avatar_priya") || path.contains("CUS002") -> R.drawable.ic_avatar_priya
             path.contains("avatar_amitabh") || path.contains("CUS003") -> R.drawable.ic_avatar_amitabh
             path.contains("avatar_sunita") || path.contains("CUS004") -> R.drawable.ic_avatar_sunita

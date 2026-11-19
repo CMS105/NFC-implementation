@@ -22,13 +22,18 @@ interface CustomerRepository {
     suspend fun isTagRegistered(tagValue: String): Boolean
 
     /**
-     * Register a new customer and bind their NFC tag value.
-     * Copies photo to app persistent storage.
+     * Register a new customer and bind their NFC tag value and unique 10-character code.
      */
     suspend fun registerCustomer(
         customerId: String,
         fullName: String,
         photoSourceUri: String,
-        tagValue: String
+        tagValue: String,
+        uniqueNfcCode: String = ""
     ): Result<Customer>
+
+    /**
+     * Binds an NFC tag to an existing customer ID.
+     */
+    suspend fun bindTagToCustomer(tagValue: String, customerId: String): Boolean
 }

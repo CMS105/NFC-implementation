@@ -17,12 +17,13 @@ import java.nio.charset.Charset
 data class ParsedNfcData(
     val customerId: String,
     val customerName: String? = null,
+    val uniqueNfcCode: String? = null,
     val rawTagValue: String
 )
 
 /**
  * Utility for parsing NDEF formatted 13.56 MHz NFC tags (e.g. NTAG213, NTAG215).
- * Parses NDEF text records (LPGPASSBOOK, ID:CUS..., NAME:...) and NDEF URI records.
+ * Parses NDEF text records (LPGPASSBOOK, ID:CUS..., NAME:..., CODE:...) and NDEF URI records.
  */
 object NfcParser {
 
@@ -104,7 +105,7 @@ object NfcParser {
         }
 
         for (record in records) {
-            // Check NDEF Text Record format: LPGPASSBOOK \n ID:CUS004 \n NAME:Rajesh Nair
+            // Check NDEF Text Record format: LPGPASSBOOK \n ID:CUS001 \n NAME:M S CHIRAG \n CODE:YHWP84PENQ
             val textPayload = parseTextRecord(record)
             if (textPayload != null) {
                 val parsed = parseLpgPassbookTextRecord(textPayload)
@@ -141,8 +142,9 @@ object NfcParser {
     /**
      * Parses NDEF text block with LPGPASSBOOK format:
      * LPGPASSBOOK
-     * ID:CUS004
-     * NAME:Rajesh Nair
+     * ID:CUS001
+     * NAME:M S CHIRAG
+     * CODE:YHWP84PENQ
      */
     fun parseLpgPassbookTextRecord(textBlock: String): ParsedNfcData? {
         val cleaned = textBlock.trim()
@@ -150,16 +152,21 @@ object NfcParser {
 
         val idRegex = Regex("(?i)\\bID:\\s*([A-Za-z0-9_-]+)")
         val nameRegex = Regex("(?i)\\bNAME:\\s*(.+)")
+        val codeRegex = Regex("(?i)\\bCODE:\\s*([A-Za-z0-9_-]+)")
 
         val idMatch = idRegex.find(cleaned)
         val nameMatch = nameRegex.find(cleaned)
+        val codeMatch = codeRegex.find(cleaned)
 
         if (idMatch != null) {
             val extractedId = idMatch.groupValues[1].uppercase()
             val extractedName = nameMatch?.groupValues?.get(1)?.trim()
+            val extractedCode = codeMatch?.groupValues?.get(1)?.trim()?.uppercase()
+
             return ParsedNfcData(
                 customerId = extractedId,
                 customerName = if (!extractedName.isNullOrEmpty()) extractedName else null,
+                uniqueNfcCode = if (!extractedCode.isNullOrEmpty()) extractedCode else null,
                 rawTagValue = cleaned
             )
         }

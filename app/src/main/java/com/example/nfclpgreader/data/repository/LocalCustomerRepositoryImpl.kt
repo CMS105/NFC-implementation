@@ -2,6 +2,7 @@ package com.example.nfclpgreader.data.repository
 
 import com.example.nfclpgreader.data.SampleCustomerData
 import com.example.nfclpgreader.data.model.Customer
+import com.example.nfclpgreader.nfc.UniqueCodeGenerator
 import kotlinx.coroutines.delay
 
 /**
@@ -35,13 +36,20 @@ class LocalCustomerRepositoryImpl : CustomerRepository {
         customerId: String,
         fullName: String,
         photoSourceUri: String,
-        tagValue: String
+        tagValue: String,
+        uniqueNfcCode: String
     ): Result<Customer> {
+        val finalCode = if (uniqueNfcCode.isNotEmpty()) uniqueNfcCode else UniqueCodeGenerator.generateCode()
         val newCustomer = Customer(
             customerId = customerId.trim().uppercase(),
             fullName = fullName.trim(),
-            photoPath = photoSourceUri
+            photoPath = photoSourceUri,
+            uniqueNfcCode = finalCode
         )
         return Result.success(newCustomer)
+    }
+
+    override suspend fun bindTagToCustomer(tagValue: String, customerId: String): Boolean {
+        return true
     }
 }
