@@ -126,7 +126,7 @@ fun CustomerProfileScreen(
                             .padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        // 1. Customer Photograph Frame (Strict Database Photo / Neutral Placeholder)
+                        // 1. Customer Photograph Frame
                         Box(
                             modifier = Modifier
                                 .size(160.dp)
@@ -136,6 +136,13 @@ fun CustomerProfileScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             val hasValidFile = customer.photoPath.isNotEmpty() && File(customer.photoPath).exists()
+                            val imageResId = when {
+                                customer.photoResId != 0 -> customer.photoResId
+                                customer.customerId.uppercase() == "CUS001" -> R.drawable.photo_cus001
+                                customer.photoPath.contains("photo_cus001") -> R.drawable.photo_cus001
+                                else -> 0
+                            }
+
                             if (hasValidFile) {
                                 AsyncImage(
                                     model = customer.photoPath,
@@ -145,9 +152,9 @@ fun CustomerProfileScreen(
                                         .fillMaxSize()
                                         .clip(CircleShape)
                                 )
-                            } else if (customer.photoResId != 0) {
+                            } else if (imageResId != 0) {
                                 Image(
-                                    painter = painterResource(id = customer.photoResId),
+                                    painter = painterResource(id = imageResId),
                                     contentDescription = "Photograph of ${customer.fullName}",
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier
