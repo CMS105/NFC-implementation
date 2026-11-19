@@ -28,19 +28,19 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.nfclpgreader.ui.theme.GasSevaGreenDark
 
-/** Ring + status text + sound. Drop this where NfcScanningAnimation is used today. */
+/** CyberRadarScanner rotating animation + status text + sound feedback. */
 @Composable
 fun ScanStage(
     phase: ScanPhase,
     modifier: Modifier = Modifier,
     soundEnabled: Boolean = true,
-    idleTitle: String = "Hold the card to the phone",
-    idleHint: String = "Back of the phone over the card’s NFC mark",
-    readingTitle: String = "Reading…",
-    successTitle: String = "Card verified",
-    successHint: String = "",            // e.g. the customer ID, shown in monospace
-    errorTitle: String = "Couldn’t read the card",
-    errorHint: String = "Hold it steady and try again",
+    idleTitle: String = "Searching for NFC Passbook...",
+    idleHint: String = "Hold phone firmly against customer passbook sticker",
+    readingTitle: String = "Verifying Passbook...",
+    successTitle: String = "Passbook Verified",
+    successHint: String = "",
+    errorTitle: String = "Couldn’t read passbook",
+    errorHint: String = "Hold steady and try again",
     onResolved: (ScanPhase) -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -50,32 +50,67 @@ fun ScanStage(
 
     var ignitePlayed by remember { mutableStateOf(false) }
     LaunchedEffect(phase) {
-        if (phase == ScanPhase.Idle) ignitePlayed = false
-        else if (!ignitePlayed) { ignitePlayed = true; feedback.onTagDetected() }
+        if (phase == ScanPhase.Idle) {
+            ignitePlayed = false
+        } else if (!ignitePlayed) {
+            ignitePlayed = true
+            feedback.onTagDetected()
+            if (phase == ScanPhase.Success) {
+                feedback.onSuccess()
+            } else if (phase == ScanPhase.Error) {
+                feedback.onError()
+            }
+            onResolved(phase)
+        }
     }
 
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-        FlameRingScanner(phase) { p ->
-            if (p == ScanPhase.Success) feedback.onSuccess() else if (p == ScanPhase.Error) feedback.onError()
-            onResolved(p)
+        if (phase == ScanPhase.Success) {
+            SuccessCheckmarkOrb()
+        } else {
+            CyberRadarScanner(
+                isScanning = (phase == ScanPhase.Reading || phase == ScanPhase.Idle)
+            )
         }
+
         Spacer(Modifier.height(24.dp))
+
         Crossfade(phase, label = "scanText") { p ->
-            val title = when (p) { ScanPhase.Idle -> idleTitle; ScanPhase.Reading -> readingTitle; ScanPhase.Success -> successTitle; ScanPhase.Error -> errorTitle }
-            val hint = when (p) { ScanPhase.Idle -> idleHint; ScanPhase.Reading -> ""; ScanPhase.Success -> successHint; ScanPhase.Error -> errorHint }
+            val title = when (p) {
+                ScanPhase.Idle -> idleTitle
+                ScanPhase.Reading -> readingTitle
+                ScanPhase.Success -> successTitle
+                ScanPhase.Error -> errorTitle
+            }
+            val hint = when (p) {
+                ScanPhase.Idle -> idleHint
+                ScanPhase.Reading -> ""
+                ScanPhase.Success -> successHint
+                ScanPhase.Error -> errorHint
+            }
             Column(
-                Modifier.padding(horizontal = 24.dp).semantics { liveRegion = LiveRegionMode.Polite },
+                Modifier
+                    .padding(horizontal = 24.dp)
+                    .semantics { liveRegion = LiveRegionMode.Polite },
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
-                    title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center,
+                    text = title,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center,
                     color = if (p == ScanPhase.Success) GasSevaGreenDark else Color.Unspecified,
                 )
-                if (hint.isNotEmpty()) Text(
-                    hint, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center,
-                    fontFamily = if (p == ScanPhase.Success) FontFamily.Monospace else FontFamily.Default,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                if (hint.isNotEmpty()) {
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = hint,
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center,
+                        fontFamily = if (p == ScanPhase.Success) FontFamily.Monospace else FontFamily.Default,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }
