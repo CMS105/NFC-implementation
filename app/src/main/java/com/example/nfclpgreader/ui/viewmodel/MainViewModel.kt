@@ -109,10 +109,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun simulateError() {
-        _uiState.value = ScanUiState.Error("NFC Verification Failed: Security code mismatch between passbook tag and database record.")
+        _uiState.value = ScanUiState.Error("NFC Verification Failed: Passbook security code mismatch.")
     }
 
-    private fun verifyTagData(parsedData: ParsedNfcData) {
+    fun verifyTagData(parsedData: ParsedNfcData) {
         _uiState.value = ScanUiState.Reading
         viewModelScope.launch {
             val customerId = parsedData.customerId
@@ -120,24 +120,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
             repository.getCustomerById(customerId).fold(
                 onSuccess = { customer ->
-                    // Strict Verification Checks:
+                    // Strict Case-Sensitive Verification Checks:
                     if (tagCode.isEmpty()) {
                         // Missing unique code on tag -> Reject verification
                         _uiState.value = ScanUiState.Error(
-                            "NFC Verification Failed: Security Code Missing on tag. Unable to verify customer authenticity."
+                            "NFC Verification Failed: Passbook security code missing."
                         )
                     } else if (customer.uniqueNfcCode.isEmpty()) {
                         // Missing unique code in DB -> Reject verification
                         _uiState.value = ScanUiState.Error(
-                            "NFC Verification Failed: Security Code Missing in database record for ${customer.fullName}."
+                            "NFC Verification Failed: Database security code missing."
                         )
-                    } else if (tagCode.equals(customer.uniqueNfcCode, ignoreCase = true)) {
-                        // Valid Customer & Matching Code
+                    } else if (tagCode == customer.uniqueNfcCode) {
+                        // Exact Case-Sensitive Match
                         _uiState.value = ScanUiState.Success(customer)
                     } else {
-                        // Customer ID exists but unique code does NOT match
+                        // Code mismatch or different casing
                         _uiState.value = ScanUiState.Error(
-                            "NFC Verification Failed: Tag unique code ($tagCode) does not match database record for ${customer.fullName}."
+                            "NFC Verification Failed: Passbook security code mismatch."
                         )
                     }
                 },

@@ -21,7 +21,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -39,7 +38,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -49,7 +47,6 @@ import com.example.nfclpgreader.data.model.Customer
 import com.example.nfclpgreader.ui.components.GasSevaHeader
 import com.example.nfclpgreader.ui.theme.BackgroundWhite
 import com.example.nfclpgreader.ui.theme.CardBorder
-import com.example.nfclpgreader.ui.theme.ChampagneGold
 import com.example.nfclpgreader.ui.theme.ElectricCobalt
 import com.example.nfclpgreader.ui.theme.GasSevaGreen
 import com.example.nfclpgreader.ui.theme.GasSevaGreenDark
@@ -115,7 +112,7 @@ fun CustomerProfileScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Customer Identity Card containing ONLY Photo, Full Name, Customer ID & Monospace Code
+                // Customer Identity Card containing ONLY Photo, Full Name, and Customer ID
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
@@ -129,10 +126,10 @@ fun CustomerProfileScreen(
                             .padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        // 1. Customer Photograph Frame
+                        // 1. Customer Photograph Frame (Strict Database Photo / Neutral Placeholder)
                         Box(
                             modifier = Modifier
-                                .size(150.dp)
+                                .size(160.dp)
                                 .clip(CircleShape)
                                 .border(width = 4.dp, color = GasSevaGreen, shape = CircleShape)
                                 .background(SurfaceOffWhite),
@@ -148,18 +145,20 @@ fun CustomerProfileScreen(
                                         .fillMaxSize()
                                         .clip(CircleShape)
                                 )
-                            } else {
-                                val drawableId = when {
-                                    customer.photoResId != 0 -> customer.photoResId
-                                    customer.customerId.endsWith("002") -> R.drawable.ic_avatar_priya
-                                    customer.customerId.endsWith("003") -> R.drawable.ic_avatar_amitabh
-                                    customer.customerId.endsWith("004") -> R.drawable.ic_avatar_sunita
-                                    customer.customerId.endsWith("005") -> R.drawable.ic_avatar_rajesh
-                                    else -> R.drawable.photo_cus001
-                                }
+                            } else if (customer.photoResId != 0) {
                                 Image(
-                                    painter = painterResource(id = drawableId),
+                                    painter = painterResource(id = customer.photoResId),
                                     contentDescription = "Photograph of ${customer.fullName}",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clip(CircleShape)
+                                )
+                            } else {
+                                // Neutral Avatar Placeholder
+                                Image(
+                                    painter = painterResource(id = R.drawable.ic_avatar_ravi),
+                                    contentDescription = "Neutral Avatar Placeholder",
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier
                                         .fillMaxSize()
@@ -168,7 +167,7 @@ fun CustomerProfileScreen(
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(20.dp))
+                        Spacer(modifier = Modifier.height(24.dp))
 
                         // 2. Customer Full Name Field
                         Surface(
@@ -178,7 +177,7 @@ fun CustomerProfileScreen(
                             border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
                         ) {
                             Column(
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)
                             ) {
                                 Text(
                                     text = stringResource(id = R.string.label_name),
@@ -195,88 +194,42 @@ fun CustomerProfileScreen(
                                     style = MaterialTheme.typography.headlineMedium.copy(
                                         color = TextPrimary,
                                         fontWeight = FontWeight.Bold,
-                                        fontSize = 19.sp
+                                        fontSize = 20.sp
                                     )
                                 )
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(14.dp))
 
-                        // 3. Customer ID & Unique 10-char NFC Code Fields
-                        Row(
+                        // 3. Customer ID Field
+                        Surface(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            shape = RoundedCornerShape(12.dp),
+                            color = SurfaceOffWhite,
+                            border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
                         ) {
-                            // Customer ID
-                            Surface(
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(12.dp),
-                                color = SurfaceOffWhite,
-                                border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
+                            Column(
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)
                             ) {
-                                Column(
-                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)
-                                ) {
-                                    Text(
-                                        text = stringResource(id = R.string.label_customer_id),
-                                        style = MaterialTheme.typography.labelLarge.copy(
-                                            color = TextSecondary,
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
+                                Text(
+                                    text = stringResource(id = R.string.label_customer_id),
+                                    style = MaterialTheme.typography.labelLarge.copy(
+                                        color = TextSecondary,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 0.5.sp
                                     )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = customer.customerId,
-                                        style = MaterialTheme.typography.titleLarge.copy(
-                                            color = GasSevaNavy,
-                                            fontWeight = FontWeight.ExtraBold,
-                                            fontSize = 18.sp
-                                        )
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = customer.customerId,
+                                    style = MaterialTheme.typography.titleLarge.copy(
+                                        color = GasSevaNavy,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        fontSize = 20.sp
                                     )
-                                }
-                            }
-
-                            // Unique NFC Code
-                            Surface(
-                                modifier = Modifier.weight(1.2f),
-                                shape = RoundedCornerShape(12.dp),
-                                color = SurfaceOffWhite,
-                                border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
-                            ) {
-                                Column(
-                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)
-                                ) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(
-                                            imageVector = Icons.Default.QrCode,
-                                            contentDescription = null,
-                                            tint = ChampagneGold,
-                                            modifier = Modifier.size(14.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(
-                                            text = "UNIQUE NFC CODE",
-                                            style = MaterialTheme.typography.labelLarge.copy(
-                                                color = ChampagneGold,
-                                                fontSize = 10.sp,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = customer.uniqueNfcCode.ifEmpty { "YHWP84PENQ" },
-                                        style = MaterialTheme.typography.titleLarge.copy(
-                                            color = TextPrimary,
-                                            fontFamily = FontFamily.Monospace,
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 15.sp,
-                                            letterSpacing = 0.5.sp
-                                        )
-                                    )
-                                }
+                                )
                             }
                         }
                     }

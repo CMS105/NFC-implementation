@@ -17,19 +17,19 @@ object SampleCustomerData {
         Customer(
             customerId = "CUS002",
             fullName = "DIGANTH",
-            photoResId = R.drawable.ic_avatar_priya,
+            photoResId = 0,
             uniqueNfcCode = "M4UP8H5PE8"
         ),
         Customer(
             customerId = "CUS003",
             fullName = "ISIRI",
-            photoResId = R.drawable.ic_avatar_amitabh,
+            photoResId = 0,
             uniqueNfcCode = "XGE5SWAEM4"
         ),
         Customer(
             customerId = "CUS004",
             fullName = "SHARMA SHREENIDHI",
-            photoResId = R.drawable.ic_avatar_sunita,
+            photoResId = 0,
             uniqueNfcCode = "MAUCXTJHHH"
         )
     )

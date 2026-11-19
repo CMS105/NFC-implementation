@@ -142,11 +142,7 @@ class RoomCustomerRepositoryImpl(
 
     private fun getDrawableIdFromPath(path: String): Int {
         return when {
-            path.contains("photo_cus001") || path.contains("CUS001") -> R.drawable.photo_cus001
-            path.contains("avatar_priya") || path.contains("CUS002") -> R.drawable.ic_avatar_priya
-            path.contains("avatar_amitabh") || path.contains("CUS003") -> R.drawable.ic_avatar_amitabh
-            path.contains("avatar_sunita") || path.contains("CUS004") -> R.drawable.ic_avatar_sunita
-            path.contains("avatar_rajesh") || path.contains("CUS005") -> R.drawable.ic_avatar_rajesh
+            path.contains("photo_cus001") || path.endsWith("${R.drawable.photo_cus001}") -> R.drawable.photo_cus001
             else -> 0
         }
     }

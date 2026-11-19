@@ -53,16 +53,16 @@ class AppDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
         // Prepopulate supplied CSV customer records
         val initialCustomers = listOf(
             Tuple4("CUS001", "M S CHIRAG", "YHWP84PENQ", R.drawable.photo_cus001),
-            Tuple4("CUS002", "DIGANTH", "M4UP8H5PE8", R.drawable.ic_avatar_priya),
-            Tuple4("CUS003", "ISIRI", "XGE5SWAEM4", R.drawable.ic_avatar_amitabh),
-            Tuple4("CUS004", "SHARMA SHREENIDHI", "MAUCXTJHHH", R.drawable.ic_avatar_sunita)
+            Tuple4("CUS002", "DIGANTH", "M4UP8H5PE8", 0),
+            Tuple4("CUS003", "ISIRI", "XGE5SWAEM4", 0),
+            Tuple4("CUS004", "SHARMA SHREENIDHI", "MAUCXTJHHH", 0)
         )
 
         for ((id, name, code, drawableId) in initialCustomers) {
             val cvCust = ContentValues().apply {
                 put(COL_CUSTOMER_ID, id)
                 put(COL_CUSTOMER_NAME, name)
-                put(COL_PHOTO_PATH, "res://$drawableId")
+                put(COL_PHOTO_PATH, if (drawableId != 0) "res://$drawableId" else "")
                 put(COL_UNIQUE_NFC_CODE, code)
             }
             db.insertWithOnConflict(TABLE_CUSTOMERS, null, cvCust, SQLiteDatabase.CONFLICT_IGNORE)
