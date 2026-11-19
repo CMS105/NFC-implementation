@@ -27,28 +27,22 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.example.nfclpgreader.ui.theme.ChampagneGold
 import com.example.nfclpgreader.ui.theme.EmeraldText
 import com.example.nfclpgreader.ui.theme.GasSevaGreen
 import com.example.nfclpgreader.ui.theme.GasSevaGreenDark
-import com.example.nfclpgreader.ui.theme.GoldDeep
-import com.example.nfclpgreader.ui.theme.GoldLight
-import com.example.nfclpgreader.ui.theme.GoldMid
 import com.example.nfclpgreader.ui.theme.ShiningGold
 import com.example.nfclpgreader.util.SoundHelper
 import kotlin.math.cos
 import kotlin.math.sin
 
-/** Ultra-Luxury 3D Rotating Gold Medallion Coin with Specular Gloss, Emerald Checkmark & Starburst Particles */
+/** Google Pay Style 3D Glowing Emerald Checkmark Orb with Multi-Colored Confetti Burst & Crystal Victory Chime */
 @Composable
 fun SuccessCheckmarkOrb(
     modifier: Modifier = Modifier,
@@ -57,16 +51,17 @@ fun SuccessCheckmarkOrb(
     val context = LocalContext.current
     val soundHelper = remember { SoundHelper(context.applicationContext) }
 
-    // 1. Spring scale-in entrance with bounce
-    val scale = remember { Animatable(0f) }
+    // 1. Google Pay style Spring Bouncy Entrance
+    val orbScale = remember { Animatable(0f) }
+    val tickScale = remember { Animatable(0f) }
     val burstProgress = remember { Animatable(0f) }
-    val coinYRotation = remember { Animatable(0f) }
 
     LaunchedEffect(Unit) {
         onChimeTrigger()
         soundHelper.playSuccessChime()
 
-        scale.animateTo(
+        // Orb Bouncy Scale Entrance (0 -> 1.15 -> 1.0)
+        orbScale.animateTo(
             targetValue = 1f,
             animationSpec = spring(
                 dampingRatio = Spring.DampingRatioMediumBouncy,
@@ -74,36 +69,29 @@ fun SuccessCheckmarkOrb(
             )
         )
 
-        // 3D Coin Flip Rotation (0 to 360 degrees)
-        coinYRotation.animateTo(
-            targetValue = 360f,
-            animationSpec = tween(900, easing = LinearEasing)
+        // Tick Spring Pop-in (0 -> 1.2 -> 1.0)
+        tickScale.animateTo(
+            targetValue = 1f,
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioHighBouncy,
+                stiffness = Spring.StiffnessMedium
+            )
         )
 
+        // Starburst Confetti Burst Animation
         burstProgress.animateTo(
             targetValue = 1f,
-            animationSpec = tween(600, easing = LinearEasing)
+            animationSpec = tween(700, easing = LinearEasing)
         )
     }
 
-    // Telemetry halo rotation
-    val infiniteTransition = rememberInfiniteTransition(label = "halo_rotation")
-    val orbitAngle by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(4000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "orbit_angle"
-    )
-
-    // Pulse expand aura
+    // Telemetry halo & pulse rotation
+    val infiniteTransition = rememberInfiniteTransition(label = "google_pay_halo")
     val auraPulse by infiniteTransition.animateFloat(
-        initialValue = 0.9f,
-        targetValue = 1.15f,
+        initialValue = 0.92f,
+        targetValue = 1.18f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1500, easing = LinearEasing),
+            animation = tween(1400, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "aura_pulse"
@@ -112,130 +100,111 @@ fun SuccessCheckmarkOrb(
     Box(
         modifier = modifier
             .size(260.dp)
-            .scale(scale.value),
+            .scale(orbScale.value),
         contentAlignment = Alignment.Center
     ) {
-        // Outer Sparkling Gold Burst Particles Canvas
+        // Google Pay Multi-Colored Confetti / Starburst Burst Canvas
         Canvas(modifier = Modifier.fillMaxSize()) {
             val center = Offset(size.width / 2f, size.height / 2f)
-            val numParticles = 14
-            val maxDistance = 110.dp.toPx() * burstProgress.value
+            val numParticles = 16
+            val maxDistance = 118.dp.toPx() * burstProgress.value
             val alpha = (1f - burstProgress.value).coerceIn(0f, 1f)
+
+            val colors = listOf(
+                EmeraldText,
+                ShiningGold,
+                Color(0xFF38BDF8), // Cyan Blue
+                Color.White
+            )
 
             for (i in 0 until numParticles) {
                 val angle = Math.toRadians((i * (360.0 / numParticles)))
+                val color = colors[i % colors.size]
                 val particleOffset = Offset(
                     x = center.x + (maxDistance * cos(angle)).toFloat(),
                     y = center.y + (maxDistance * sin(angle)).toFloat()
                 )
                 drawCircle(
-                    color = ShiningGold.copy(alpha = alpha * 0.9f),
-                    radius = (3.5.dp.toPx() * (1f - burstProgress.value * 0.5f)),
+                    color = color.copy(alpha = alpha * 0.95f),
+                    radius = (4.dp.toPx() * (1f - burstProgress.value * 0.4f)),
                     center = particleOffset
                 )
             }
         }
 
-        // Rotating outer metallic gold telemetry ring
+        // Radial Glowing Emerald Backdrop Aura
         Box(
             modifier = Modifier
-                .size(210.dp)
-                .rotate(orbitAngle)
-                .border(2.dp, ChampagneGold.copy(alpha = 0.85f), CircleShape)
-        )
-
-        // Counter-rotating dashed accent ring
-        Canvas(
-            modifier = Modifier
-                .size(185.dp)
-                .rotate(-orbitAngle * 1.2f)
-        ) {
-            drawCircle(
-                color = EmeraldText.copy(alpha = 0.5f),
-                radius = size.minDimension / 2,
-                style = Stroke(width = 2f)
-            )
-        }
-
-        // Radial high-voltage glowing emerald aura
-        Box(
-            modifier = Modifier
-                .size(165.dp * auraPulse)
+                .size(175.dp * auraPulse)
                 .clip(CircleShape)
                 .background(
                     Brush.radialGradient(
                         colors = listOf(
                             EmeraldText.copy(alpha = 0.55f),
-                            GasSevaGreen.copy(alpha = 0.25f),
+                            GasSevaGreen.copy(alpha = 0.22f),
                             Color.Transparent
                         )
                     )
                 )
         )
 
-        // 3D Rotating Gold Medallion Coin (Flips on Y-axis)
+        // Outer Gold Accent Halo Ring
+        Canvas(modifier = Modifier.size(155.dp)) {
+            drawCircle(
+                color = ShiningGold.copy(alpha = 0.6f),
+                radius = size.minDimension / 2,
+                style = Stroke(width = 2.5f)
+            )
+        }
+
+        // Main Google Pay 3D Glowing Emerald Sphere Orb
         Box(
             modifier = Modifier
-                .size(130.dp)
-                .graphicsLayer {
-                    rotationY = coinYRotation.value
-                    cameraDistance = 12f * density
-                }
+                .size(126.dp)
                 .clip(CircleShape)
                 .background(
                     Brush.radialGradient(
                         colors = listOf(
-                            GoldLight,  // Specular Top Gold Light
-                            GoldMid,    // Brushed Gold Body
-                            GoldDeep,   // Deep Gold Body
-                            Color(0xFF785918) // Gold Base Shadow
+                            Color(0xFFA7F3D0), // Top Specular Light Highlight
+                            EmeraldText,       // Bright Emerald
+                            GasSevaGreen,      // Medium Emerald
+                            GasSevaGreenDark,  // Deep Emerald Body
+                            Color(0xFF047857)  // Deep Shadow Base
                         ),
-                        center = Offset(130f * 0.35f, 130f * 0.35f),
-                        radius = 130f * 0.85f
+                        center = Offset(126f * 0.35f, 126f * 0.35f),
+                        radius = 126f * 0.85f
                     )
                 )
-                .border(4.dp, ShiningGold, CircleShape),
+                .border(3.5.dp, ShiningGold, CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            // 3D Glass Specular Reflection Highlight (Upper-Left Oval Gloss)
+            // 3D Glass Specular Reflection Oval Gloss
             Box(
                 modifier = Modifier
-                    .size(width = 48.dp, height = 24.dp)
-                    .offset(x = (-18).dp, y = (-26).dp)
+                    .size(width = 52.dp, height = 26.dp)
+                    .offset(x = (-18).dp, y = (-28).dp)
                     .clip(CircleShape)
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                Color.White.copy(alpha = 0.75f),
+                                Color.White.copy(alpha = 0.80f),
                                 Color.White.copy(alpha = 0.05f)
                             )
                         )
                     )
             )
 
-            // Inner Metallic Gold Rim Ring
+            // 3D Inner Rim Highlight
             Box(
                 modifier = Modifier
-                    .size(108.dp)
+                    .size(112.dp)
                     .clip(CircleShape)
-                    .border(1.5.dp, Color.White.copy(alpha = 0.4f), CircleShape)
+                    .border(1.5.dp, Color.White.copy(alpha = 0.45f), CircleShape)
             )
 
-            // 3D Emerald Inner Emblem Core
+            // Spring Pop-In 3D White Checkmark Tick
             Box(
-                modifier = Modifier
-                    .size(80.dp)
-                    .clip(CircleShape)
-                    .background(
-                        Brush.radialGradient(
-                            colors = listOf(
-                                EmeraldText,
-                                GasSevaGreen,
-                                GasSevaGreenDark
-                            )
-                        )
-                    )
-                    .border(1.5.dp, ShiningGold, CircleShape),
+                modifier = Modifier.scale(tickScale.value),
                 contentAlignment = Alignment.Center
             ) {
                 // 3D Depth Shadow under Checkmark Tick
@@ -244,16 +213,16 @@ fun SuccessCheckmarkOrb(
                     contentDescription = null,
                     tint = Color.Black.copy(alpha = 0.45f),
                     modifier = Modifier
-                        .size(52.dp)
-                        .offset(x = 2.dp, y = 3.dp)
+                        .size(68.dp)
+                        .offset(x = 2.5.dp, y = 3.5.dp)
                 )
 
                 // Primary Crisp White 3D Checkmark Tick
                 Icon(
                     imageVector = Icons.Rounded.Check,
-                    contentDescription = "Verified 3D Tick",
+                    contentDescription = "Google Pay Style Verified 3D Tick",
                     tint = Color.White,
-                    modifier = Modifier.size(52.dp)
+                    modifier = Modifier.size(68.dp)
                 )
             }
         }
