@@ -34,7 +34,9 @@ import com.example.nfclpgreader.ui.theme.CobaltGlow
 import com.example.nfclpgreader.ui.theme.ElectricCobalt
 import com.example.nfclpgreader.ui.theme.ObsidianContainer
 import com.example.nfclpgreader.ui.theme.ObsidianContainerHigh
+import com.example.nfclpgreader.ui.theme.ShiningGold
 
+/** Immersive Full-Screen Immersive 3D Cyber Radar Scanner */
 @Composable
 fun CyberRadarScanner(
     modifier: Modifier = Modifier,
@@ -55,8 +57,8 @@ fun CyberRadarScanner(
 
     // 3D Pulse expansion animation
     val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 0.85f,
-        targetValue = 1.25f,
+        initialValue = 0.88f,
+        targetValue = 1.28f,
         animationSpec = infiniteRepeatable(
             animation = tween(1200, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
@@ -65,34 +67,34 @@ fun CyberRadarScanner(
     )
 
     Box(
-        modifier = modifier.size(240.dp),
+        modifier = modifier.size(290.dp),
         contentAlignment = Alignment.Center
     ) {
-        // Dynamic radar sweep canvas with 3D telemetry rings
+        // Dynamic full-width radar sweep canvas with 3D telemetry rings
         Canvas(modifier = Modifier.fillMaxSize()) {
             val maxRadius = size.minDimension / 2
 
-            // Outer metallic gold ring
+            // Outer metallic gold rim
             drawCircle(
-                color = ChampagneGold.copy(alpha = 0.5f),
+                color = ShiningGold.copy(alpha = 0.65f),
                 radius = maxRadius * 0.98f,
-                style = Stroke(width = 2f)
+                style = Stroke(width = 2.5f)
             )
             // Concentric telemetry rings
             drawCircle(
-                color = CardBorder,
+                color = CardBorder.copy(alpha = 0.8f),
                 radius = maxRadius * 0.82f,
                 style = Stroke(width = 1.5f)
             )
             drawCircle(
-                color = ElectricCobalt.copy(alpha = 0.4f),
-                radius = maxRadius * 0.58f,
-                style = Stroke(width = 1f)
+                color = ElectricCobalt.copy(alpha = 0.45f),
+                radius = maxRadius * 0.62f,
+                style = Stroke(width = 1.2f)
             )
             drawCircle(
-                color = ChampagneGold.copy(alpha = 0.35f),
-                radius = maxRadius * 0.36f,
-                style = Stroke(width = 1f)
+                color = ChampagneGold.copy(alpha = 0.40f),
+                radius = maxRadius * 0.40f,
+                style = Stroke(width = 1.2f)
             )
 
             // Scanning beacon gradient sweep
@@ -100,9 +102,9 @@ fun CyberRadarScanner(
                 drawArc(
                     brush = Brush.sweepGradient(
                         0.0f to Color.Transparent,
-                        0.70f to ElectricCobalt.copy(alpha = 0.08f),
-                        0.90f to CobaltGlow.copy(alpha = 0.35f),
-                        1.0f to ChampagneGold.copy(alpha = 0.65f)
+                        0.70f to ElectricCobalt.copy(alpha = 0.10f),
+                        0.90f to CobaltGlow.copy(alpha = 0.40f),
+                        1.0f to ShiningGold.copy(alpha = 0.75f)
                     ),
                     startAngle = sweepAngle - 90f,
                     sweepAngle = 90f,
@@ -111,51 +113,51 @@ fun CyberRadarScanner(
             }
         }
 
-        // Ambient radial blue 3D glow
+        // Ambient radial 3D glow aura
         Box(
             modifier = Modifier
-                .size(150.dp * pulseScale)
+                .size(180.dp * pulseScale)
                 .clip(CircleShape)
                 .background(
                     Brush.radialGradient(
                         colors = listOf(
-                            ElectricCobalt.copy(alpha = 0.4f),
-                            CobaltGlow.copy(alpha = 0.15f),
+                            ElectricCobalt.copy(alpha = 0.45f),
+                            CobaltGlow.copy(alpha = 0.18f),
                             Color.Transparent
                         )
                     )
                 )
         )
 
-        // Center 3D Metallic NFC Reader Hub
+        // Center 3D Metallic NFC Reader Hub (Large 110dp Hub)
         Box(
             modifier = Modifier
-                .size(96.dp)
+                .size(110.dp)
                 .clip(CircleShape)
                 .background(
                     Brush.radialGradient(
                         colors = listOf(
                             ObsidianContainerHigh,
                             ObsidianContainer,
-                            Color(0xFF070C18)
+                            Color(0xFF04060A)
                         ),
-                        center = Offset(48f, 24f),
-                        radius = 80f
+                        center = Offset(55f, 28f),
+                        radius = 95f
                     )
                 )
-                .border(2.5.dp, ChampagneGold, CircleShape),
+                .border(3.dp, ShiningGold, CircleShape),
             contentAlignment = Alignment.Center
         ) {
             // 3D Glass Gloss Reflection
             Box(
                 modifier = Modifier
-                    .size(width = 36.dp, height = 16.dp)
-                    .offset(x = (-12).dp, y = (-18).dp)
+                    .size(width = 44.dp, height = 20.dp)
+                    .offset(x = (-16).dp, y = (-22).dp)
                     .clip(CircleShape)
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                Color.White.copy(alpha = 0.4f),
+                                Color.White.copy(alpha = 0.45f),
                                 Color.White.copy(alpha = 0.02f)
                             )
                         )
@@ -166,7 +168,7 @@ fun CyberRadarScanner(
                 imageVector = Icons.Rounded.Sensors,
                 contentDescription = "NFC Sensor",
                 tint = CobaltGlow,
-                modifier = Modifier.size(50.dp)
+                modifier = Modifier.size(56.dp)
             )
         }
     }

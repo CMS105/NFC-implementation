@@ -33,18 +33,22 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.nfclpgreader.ui.theme.ChampagneGold
 import com.example.nfclpgreader.ui.theme.EmeraldText
 import com.example.nfclpgreader.ui.theme.GasSevaGreen
 import com.example.nfclpgreader.ui.theme.GasSevaGreenDark
+import com.example.nfclpgreader.ui.theme.GoldDeep
+import com.example.nfclpgreader.ui.theme.GoldLight
+import com.example.nfclpgreader.ui.theme.GoldMid
 import com.example.nfclpgreader.ui.theme.ShiningGold
 import com.example.nfclpgreader.util.SoundHelper
 import kotlin.math.cos
 import kotlin.math.sin
 
-/** Ultra-Luxury 3D Glowing Emerald Orb with Starburst Sparkles, Specular Lighting, Metallic Gold Rim & Crystal Chime */
+/** Ultra-Luxury 3D Rotating Gold Medallion Coin with Specular Gloss, Emerald Checkmark & Starburst Particles */
 @Composable
 fun SuccessCheckmarkOrb(
     modifier: Modifier = Modifier,
@@ -56,6 +60,7 @@ fun SuccessCheckmarkOrb(
     // 1. Spring scale-in entrance with bounce
     val scale = remember { Animatable(0f) }
     val burstProgress = remember { Animatable(0f) }
+    val coinYRotation = remember { Animatable(0f) }
 
     LaunchedEffect(Unit) {
         onChimeTrigger()
@@ -68,13 +73,20 @@ fun SuccessCheckmarkOrb(
                 stiffness = Spring.StiffnessLow
             )
         )
+
+        // 3D Coin Flip Rotation (0 to 360 degrees)
+        coinYRotation.animateTo(
+            targetValue = 360f,
+            animationSpec = tween(900, easing = LinearEasing)
+        )
+
         burstProgress.animateTo(
             targetValue = 1f,
             animationSpec = tween(600, easing = LinearEasing)
         )
     }
 
-    // 2. Telemetry halo rotation
+    // Telemetry halo rotation
     val infiniteTransition = rememberInfiniteTransition(label = "halo_rotation")
     val orbitAngle by infiniteTransition.animateFloat(
         initialValue = 0f,
@@ -99,15 +111,15 @@ fun SuccessCheckmarkOrb(
 
     Box(
         modifier = modifier
-            .size(240.dp)
+            .size(260.dp)
             .scale(scale.value),
         contentAlignment = Alignment.Center
     ) {
         // Outer Sparkling Gold Burst Particles Canvas
         Canvas(modifier = Modifier.fillMaxSize()) {
             val center = Offset(size.width / 2f, size.height / 2f)
-            val numParticles = 12
-            val maxDistance = 95.dp.toPx() * burstProgress.value
+            val numParticles = 14
+            val maxDistance = 110.dp.toPx() * burstProgress.value
             val alpha = (1f - burstProgress.value).coerceIn(0f, 1f)
 
             for (i in 0 until numParticles) {
@@ -117,8 +129,8 @@ fun SuccessCheckmarkOrb(
                     y = center.y + (maxDistance * sin(angle)).toFloat()
                 )
                 drawCircle(
-                    color = ShiningGold.copy(alpha = alpha * 0.85f),
-                    radius = (3.dp.toPx() * (1f - burstProgress.value * 0.5f)),
+                    color = ShiningGold.copy(alpha = alpha * 0.9f),
+                    radius = (3.5.dp.toPx() * (1f - burstProgress.value * 0.5f)),
                     center = particleOffset
                 )
             }
@@ -127,7 +139,7 @@ fun SuccessCheckmarkOrb(
         // Rotating outer metallic gold telemetry ring
         Box(
             modifier = Modifier
-                .size(190.dp)
+                .size(210.dp)
                 .rotate(orbitAngle)
                 .border(2.dp, ChampagneGold.copy(alpha = 0.85f), CircleShape)
         )
@@ -135,7 +147,7 @@ fun SuccessCheckmarkOrb(
         // Counter-rotating dashed accent ring
         Canvas(
             modifier = Modifier
-                .size(170.dp)
+                .size(185.dp)
                 .rotate(-orbitAngle * 1.2f)
         ) {
             drawCircle(
@@ -148,12 +160,12 @@ fun SuccessCheckmarkOrb(
         // Radial high-voltage glowing emerald aura
         Box(
             modifier = Modifier
-                .size(150.dp * auraPulse)
+                .size(165.dp * auraPulse)
                 .clip(CircleShape)
                 .background(
                     Brush.radialGradient(
                         colors = listOf(
-                            EmeraldText.copy(alpha = 0.5f),
+                            EmeraldText.copy(alpha = 0.55f),
                             GasSevaGreen.copy(alpha = 0.25f),
                             Color.Transparent
                         )
@@ -161,59 +173,89 @@ fun SuccessCheckmarkOrb(
                 )
         )
 
-        // 3D Metallic Emerald Sphere Orb
+        // 3D Rotating Gold Medallion Coin (Flips on Y-axis)
         Box(
             modifier = Modifier
-                .size(116.dp)
+                .size(130.dp)
+                .graphicsLayer {
+                    rotationY = coinYRotation.value
+                    cameraDistance = 12f * density
+                }
                 .clip(CircleShape)
                 .background(
                     Brush.radialGradient(
                         colors = listOf(
-                            Color(0xFFA7F3D0), // Top Specular Emerald Light
-                            GasSevaGreen,      // Medium Emerald Body
-                            GasSevaGreenDark,  // Deep Emerald Body
-                            Color(0xFF064E3B)  // Shadow Base
+                            GoldLight,  // Specular Top Gold Light
+                            GoldMid,    // Brushed Gold Body
+                            GoldDeep,   // Deep Gold Body
+                            Color(0xFF785918) // Gold Base Shadow
                         ),
-                        center = Offset(116f * 0.35f, 116f * 0.35f),
-                        radius = 116f * 0.85f
+                        center = Offset(130f * 0.35f, 130f * 0.35f),
+                        radius = 130f * 0.85f
                     )
                 )
-                .border(3.dp, ShiningGold, CircleShape),
+                .border(4.dp, ShiningGold, CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            // 3D Glass Specular Reflection Highlight
+            // 3D Glass Specular Reflection Highlight (Upper-Left Oval Gloss)
             Box(
                 modifier = Modifier
-                    .size(width = 42.dp, height = 20.dp)
-                    .offset(x = (-16).dp, y = (-22).dp)
+                    .size(width = 48.dp, height = 24.dp)
+                    .offset(x = (-18).dp, y = (-26).dp)
                     .clip(CircleShape)
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                Color.White.copy(alpha = 0.7f),
+                                Color.White.copy(alpha = 0.75f),
                                 Color.White.copy(alpha = 0.05f)
                             )
                         )
                     )
             )
 
-            // 3D Depth Shadow under Checkmark Tick
-            Icon(
-                imageVector = Icons.Rounded.Check,
-                contentDescription = null,
-                tint = Color.Black.copy(alpha = 0.4f),
+            // Inner Metallic Gold Rim Ring
+            Box(
                 modifier = Modifier
-                    .size(68.dp)
-                    .offset(x = 2.dp, y = 3.dp)
+                    .size(108.dp)
+                    .clip(CircleShape)
+                    .border(1.5.dp, Color.White.copy(alpha = 0.4f), CircleShape)
             )
 
-            // Primary Crisp White 3D Checkmark Tick
-            Icon(
-                imageVector = Icons.Rounded.Check,
-                contentDescription = "Verified 3D Tick",
-                tint = Color.White,
-                modifier = Modifier.size(68.dp)
-            )
+            // 3D Emerald Inner Emblem Core
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .clip(CircleShape)
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(
+                                EmeraldText,
+                                GasSevaGreen,
+                                GasSevaGreenDark
+                            )
+                        )
+                    )
+                    .border(1.5.dp, ShiningGold, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                // 3D Depth Shadow under Checkmark Tick
+                Icon(
+                    imageVector = Icons.Rounded.Check,
+                    contentDescription = null,
+                    tint = Color.Black.copy(alpha = 0.45f),
+                    modifier = Modifier
+                        .size(52.dp)
+                        .offset(x = 2.dp, y = 3.dp)
+                )
+
+                // Primary Crisp White 3D Checkmark Tick
+                Icon(
+                    imageVector = Icons.Rounded.Check,
+                    contentDescription = "Verified 3D Tick",
+                    tint = Color.White,
+                    modifier = Modifier.size(52.dp)
+                )
+            }
         }
     }
 }
