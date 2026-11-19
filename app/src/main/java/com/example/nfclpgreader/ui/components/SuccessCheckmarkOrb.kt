@@ -13,6 +13,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -32,23 +33,34 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.nfclpgreader.ui.theme.ChampagneGold
-import com.example.nfclpgreader.ui.theme.CobaltGlow
-import com.example.nfclpgreader.ui.theme.ElectricCobalt
+import com.example.nfclpgreader.ui.theme.EmeraldText
 import com.example.nfclpgreader.ui.theme.GasSevaGreen
 import com.example.nfclpgreader.ui.theme.GasSevaGreenDark
+import com.example.nfclpgreader.ui.theme.ShiningGold
+import com.example.nfclpgreader.util.SoundHelper
+import kotlin.math.cos
+import kotlin.math.sin
 
-/** Ultra-Rich 3D Glowing Emerald Orb with Specular Lighting, Metallic Gold Rim & 3D Checkmark Tick */
+/** Ultra-Luxury 3D Glowing Emerald Orb with Starburst Sparkles, Specular Lighting, Metallic Gold Rim & Crystal Chime */
 @Composable
 fun SuccessCheckmarkOrb(
     modifier: Modifier = Modifier,
     onChimeTrigger: () -> Unit = {}
 ) {
+    val context = LocalContext.current
+    val soundHelper = remember { SoundHelper(context.applicationContext) }
+
     // 1. Spring scale-in entrance with bounce
     val scale = remember { Animatable(0f) }
+    val burstProgress = remember { Animatable(0f) }
+
     LaunchedEffect(Unit) {
         onChimeTrigger()
+        soundHelper.playSuccessChime()
+
         scale.animateTo(
             targetValue = 1f,
             animationSpec = spring(
@@ -56,9 +68,13 @@ fun SuccessCheckmarkOrb(
                 stiffness = Spring.StiffnessLow
             )
         )
+        burstProgress.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(600, easing = LinearEasing)
+        )
     }
 
-    // 2. Slow telemetry halo rotation
+    // 2. Telemetry halo rotation
     val infiniteTransition = rememberInfiniteTransition(label = "halo_rotation")
     val orbitAngle by infiniteTransition.animateFloat(
         initialValue = 0f,
@@ -83,16 +99,37 @@ fun SuccessCheckmarkOrb(
 
     Box(
         modifier = modifier
-            .size(220.dp)
+            .size(240.dp)
             .scale(scale.value),
         contentAlignment = Alignment.Center
     ) {
+        // Outer Sparkling Gold Burst Particles Canvas
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val center = Offset(size.width / 2f, size.height / 2f)
+            val numParticles = 12
+            val maxDistance = 95.dp.toPx() * burstProgress.value
+            val alpha = (1f - burstProgress.value).coerceIn(0f, 1f)
+
+            for (i in 0 until numParticles) {
+                val angle = Math.toRadians((i * (360.0 / numParticles)))
+                val particleOffset = Offset(
+                    x = center.x + (maxDistance * cos(angle)).toFloat(),
+                    y = center.y + (maxDistance * sin(angle)).toFloat()
+                )
+                drawCircle(
+                    color = ShiningGold.copy(alpha = alpha * 0.85f),
+                    radius = (3.dp.toPx() * (1f - burstProgress.value * 0.5f)),
+                    center = particleOffset
+                )
+            }
+        }
+
         // Rotating outer metallic gold telemetry ring
         Box(
             modifier = Modifier
                 .size(190.dp)
                 .rotate(orbitAngle)
-                .border(2.dp, ChampagneGold.copy(alpha = 0.75f), CircleShape)
+                .border(2.dp, ChampagneGold.copy(alpha = 0.85f), CircleShape)
         )
 
         // Counter-rotating dashed accent ring
@@ -102,13 +139,13 @@ fun SuccessCheckmarkOrb(
                 .rotate(-orbitAngle * 1.2f)
         ) {
             drawCircle(
-                color = ElectricCobalt.copy(alpha = 0.5f),
+                color = EmeraldText.copy(alpha = 0.5f),
                 radius = size.minDimension / 2,
                 style = Stroke(width = 2f)
             )
         }
 
-        // Radial high-voltage glowing aura
+        // Radial high-voltage glowing emerald aura
         Box(
             modifier = Modifier
                 .size(150.dp * auraPulse)
@@ -116,8 +153,8 @@ fun SuccessCheckmarkOrb(
                 .background(
                     Brush.radialGradient(
                         colors = listOf(
-                            GasSevaGreen.copy(alpha = 0.45f),
-                            CobaltGlow.copy(alpha = 0.2f),
+                            EmeraldText.copy(alpha = 0.5f),
+                            GasSevaGreen.copy(alpha = 0.25f),
                             Color.Transparent
                         )
                     )
@@ -133,7 +170,7 @@ fun SuccessCheckmarkOrb(
                     Brush.radialGradient(
                         colors = listOf(
                             Color(0xFFA7F3D0), // Top Specular Emerald Light
-                            GasSevaGreen,      // Medium Emerald
+                            GasSevaGreen,      // Medium Emerald Body
                             GasSevaGreenDark,  // Deep Emerald Body
                             Color(0xFF064E3B)  // Shadow Base
                         ),
@@ -141,10 +178,10 @@ fun SuccessCheckmarkOrb(
                         radius = 116f * 0.85f
                     )
                 )
-                .border(3.dp, ChampagneGold, CircleShape),
+                .border(3.dp, ShiningGold, CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            // 3D Glass Specular Reflection Highlight (Upper-Left Oval Gloss)
+            // 3D Glass Specular Reflection Highlight
             Box(
                 modifier = Modifier
                     .size(width = 42.dp, height = 20.dp)
@@ -153,7 +190,7 @@ fun SuccessCheckmarkOrb(
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                Color.White.copy(alpha = 0.65f),
+                                Color.White.copy(alpha = 0.7f),
                                 Color.White.copy(alpha = 0.05f)
                             )
                         )
@@ -164,7 +201,7 @@ fun SuccessCheckmarkOrb(
             Icon(
                 imageVector = Icons.Rounded.Check,
                 contentDescription = null,
-                tint = Color.Black.copy(alpha = 0.35f),
+                tint = Color.Black.copy(alpha = 0.4f),
                 modifier = Modifier
                     .size(68.dp)
                     .offset(x = 2.dp, y = 3.dp)
