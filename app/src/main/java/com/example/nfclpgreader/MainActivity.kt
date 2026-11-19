@@ -1,6 +1,7 @@
 package com.example.nfclpgreader
 
 import android.content.Intent
+import android.nfc.NfcAdapter
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
@@ -11,6 +12,7 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -48,7 +50,8 @@ class MainActivity : ComponentActivity() {
 
         nfcManager = NfcManager(this)
 
-        if (intent != null) {
+        val action = intent?.action
+        if (isNfcIntent(action)) {
             viewModel.processNfcIntent(intent)
         }
 
@@ -59,6 +62,8 @@ class MainActivity : ComponentActivity() {
                     color = BackgroundWhite
                 ) {
                     GasSevaApp(
+                        activity = this,
+                        nfcManager = nfcManager,
                         viewModel = viewModel,
                         onOpenNfcSettings = { openNfcSettings() }
                     )
@@ -72,14 +77,8 @@ class MainActivity : ComponentActivity() {
         val nfcStatus = nfcManager.getNfcStatus()
         viewModel.updateNfcStatus(nfcStatus)
 
-        // Enable Reader mode ONLY when user is actively on ScanNfc screen
         if (viewModel.currentScreen.value is AppScreen.ScanNfc) {
-            nfcManager.enableReaderMode(this) { tag ->
-                runOnUiThread {
-                    viewModel.processNfcTag(tag)
-                }
-            }
-            nfcManager.enableForegroundDispatch(this)
+            enableNfcReaderMode()
         }
     }
 
@@ -92,9 +91,29 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        if (viewModel.currentScreen.value is AppScreen.ScanNfc || intent.action != null) {
+        if (isNfcIntent(intent.action)) {
             viewModel.processNfcIntent(intent)
         }
+    }
+
+    fun enableNfcReaderMode() {
+        nfcManager.enableReaderMode(this) { tag ->
+            runOnUiThread {
+                viewModel.processNfcTag(tag)
+            }
+        }
+        nfcManager.enableForegroundDispatch(this)
+    }
+
+    fun disableNfcReaderMode() {
+        nfcManager.disableReaderMode(this)
+        nfcManager.disableForegroundDispatch(this)
+    }
+
+    private fun isNfcIntent(action: String?): Boolean {
+        return action == NfcAdapter.ACTION_NDEF_DISCOVERED ||
+               action == NfcAdapter.ACTION_TECH_DISCOVERED ||
+               action == NfcAdapter.ACTION_TAG_DISCOVERED
     }
 
     private fun openNfcSettings() {
@@ -110,6 +129,8 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun GasSevaApp(
+    activity: MainActivity,
+    nfcManager: NfcManager,
     viewModel: MainViewModel,
     onOpenNfcSettings: () -> Unit
 ) {
@@ -120,6 +141,21 @@ fun GasSevaApp(
     var celebrated by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
+    // Manage NFC Reader Mode activation dynamically based on current screen
+    LaunchedEffect(currentScreen) {
+        if (currentScreen is AppScreen.ScanNfc) {
+            activity.enableNfcReaderMode()
+        } else {
+            activity.disableNfcReaderMode()
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            activity.disableNfcReaderMode()
+        }
+    }
+
     LaunchedEffect(uiState) {
         celebrated = false
     }
@@ -128,10 +164,15 @@ fun GasSevaApp(
         when (screen) {
             is AppScreen.Home -> {
                 HomeScreen(
-                    onManualSearchClick = { viewModel.navigateTo(AppScreen.SearchCustomer) },
+                    onScanPassbookClick = {
+                        viewModel.navigateTo(AppScreen.ScanNfc)
+                    },
+                    onManualSearchClick = {
+                        viewModel.navigateTo(AppScreen.SearchCustomer)
+                    },
                     onSimulateScanSuccess = {
                         viewModel.navigateTo(AppScreen.ScanNfc)
-                        viewModel.processRawInput("https://example.com/customer/CUS001")
+                        viewModel.processRawInput("LPGPASSBOOK\nID:CUS001\nNAME:M S CHIRAG\nCODE:YHWP84PENQ")
                     },
                     onSimulateScanFailed = {
                         viewModel.navigateTo(AppScreen.ScanNfc)

@@ -161,7 +161,7 @@ object NfcParser {
         if (idMatch != null) {
             val extractedId = idMatch.groupValues[1].uppercase()
             val extractedName = nameMatch?.groupValues?.get(1)?.trim()
-            val extractedCode = codeMatch?.groupValues?.get(1)?.trim()?.uppercase()
+            val extractedCode = codeMatch?.groupValues?.get(1)?.trim() // Preserves exact casing from tag for strict verification
 
             return ParsedNfcData(
                 customerId = extractedId,

@@ -15,11 +15,13 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Nfc
 import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -46,6 +48,7 @@ import com.example.nfclpgreader.ui.theme.TextSecondary
 
 @Composable
 fun HomeScreen(
+    onScanPassbookClick: () -> Unit,
     onManualSearchClick: () -> Unit,
     onSimulateScanSuccess: () -> Unit,
     onSimulateScanFailed: () -> Unit,
@@ -89,7 +92,7 @@ fun HomeScreen(
                     ) {
                         Box(modifier = Modifier.size(6.dp).clip(RoundedCornerShape(3.dp)).background(StatusSuccess))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("NFC READY", color = TextPrimary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        Text("READY", color = TextPrimary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -109,14 +112,14 @@ fun HomeScreen(
                 modifier = Modifier.padding(top = 16.dp)
             ) {
                 Text(
-                    text = "Tap LPG Passbook",
+                    text = "Welcome to GasSeva",
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
                     color = TextPrimary
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "Hold customer NFC smart passbook or RFID cylinder card near the back of this terminal",
+                    text = "Select an option below to identify customer and verify LPG passbook",
                     fontSize = 13.sp,
                     color = TextSecondary,
                     textAlign = TextAlign.Center,
@@ -124,34 +127,66 @@ fun HomeScreen(
                 )
             }
 
-            // Central Animated Cyber Radar
+            // Central Animated Cyber Radar (Idle on Home screen)
             CyberRadarScanner(
-                modifier = Modifier.padding(vertical = 24.dp),
-                isScanning = true
+                modifier = Modifier.padding(vertical = 20.dp),
+                isScanning = false
             )
 
-            // Primary & Secondary Action Cards
+            // Primary Actions: Action A (Scan NFC Passbook) & Action B (Enter Customer ID Manually)
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 24.dp)
+                    .padding(bottom = 20.dp)
             ) {
+                // Action A: Scan NFC Passbook
                 Button(
+                    onClick = onScanPassbookClick,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(54.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = ElectricCobalt)
+                ) {
+                    Icon(Icons.Default.Nfc, contentDescription = null, tint = Color.White)
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "Scan NFC Passbook",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            color = Color.White,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Action B: Enter Customer ID Manually
+                OutlinedButton(
                     onClick = onManualSearchClick,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp),
                     shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = ElectricCobalt)
+                    colors = ButtonDefaults.outlinedButtonColors(containerColor = ObsidianContainer),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
                 ) {
-                    Icon(Icons.Rounded.Search, contentDescription = null, tint = Color.White)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Search Customer Manually", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                    Icon(Icons.Rounded.Search, contentDescription = null, tint = TextPrimary)
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "Enter Customer ID Manually",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            color = TextPrimary,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    )
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
-                // Diagnostic Simulator / Demo triggers for testing
+                // Simulator triggers for testing without physical tags
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -160,23 +195,23 @@ fun HomeScreen(
                         onClick = onSimulateScanSuccess,
                         modifier = Modifier
                             .weight(1f)
-                            .height(46.dp),
-                        shape = RoundedCornerShape(10.dp),
+                            .height(42.dp),
+                        shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.outlinedButtonColors(containerColor = ObsidianContainer),
                         border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
                     ) {
-                        Text("Simulate Success", color = TextPrimary, fontSize = 12.sp)
+                        Text("Simulate Success", color = TextPrimary, fontSize = 11.sp)
                     }
                     OutlinedButton(
                         onClick = onSimulateScanFailed,
                         modifier = Modifier
                             .weight(1f)
-                            .height(46.dp),
-                        shape = RoundedCornerShape(10.dp),
+                            .height(42.dp),
+                        shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.outlinedButtonColors(containerColor = ObsidianContainer),
                         border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
                     ) {
-                        Text("Simulate Error", color = StatusError, fontSize = 12.sp)
+                        Text("Simulate Error", color = StatusError, fontSize = 11.sp)
                     }
                 }
             }
