@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import com.example.nfclpgreader.nfc.NfcManager
 import com.example.nfclpgreader.nfc.NfcStatus
 import com.example.nfclpgreader.ui.components.ScanPhase
+import com.example.nfclpgreader.ui.screens.CustomerNotFoundScreen
 import com.example.nfclpgreader.ui.screens.CustomerProfileScreen
 import com.example.nfclpgreader.ui.screens.HomeScreen
 import com.example.nfclpgreader.ui.screens.RegisterCustomerScreen
@@ -71,12 +72,15 @@ class MainActivity : ComponentActivity() {
         val nfcStatus = nfcManager.getNfcStatus()
         viewModel.updateNfcStatus(nfcStatus)
 
-        nfcManager.enableReaderMode(this) { tag ->
-            runOnUiThread {
-                viewModel.processNfcTag(tag)
+        // Enable Reader mode ONLY when user is actively on ScanNfc screen
+        if (viewModel.currentScreen.value is AppScreen.ScanNfc) {
+            nfcManager.enableReaderMode(this) { tag ->
+                runOnUiThread {
+                    viewModel.processNfcTag(tag)
+                }
             }
+            nfcManager.enableForegroundDispatch(this)
         }
-        nfcManager.enableForegroundDispatch(this)
     }
 
     override fun onPause() {
@@ -88,7 +92,9 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        viewModel.processNfcIntent(intent)
+        if (viewModel.currentScreen.value is AppScreen.ScanNfc || intent.action != null) {
+            viewModel.processNfcIntent(intent)
+        }
     }
 
     private fun openNfcSettings() {
@@ -179,7 +185,7 @@ fun GasSevaApp(
                             )
                         }
                         is ScanUiState.NewTag -> {
-                            // Handled by AppScreen.RegisterCustomer
+                            // Handled by AppScreen.CustomerNotFound
                         }
                         is ScanUiState.Error -> {
                             ScanFailedScreen(
@@ -191,10 +197,28 @@ fun GasSevaApp(
                     }
                 }
             }
+            is AppScreen.CustomerNotFound -> {
+                CustomerNotFoundScreen(
+                    customerId = screen.customerId,
+                    onRegisterNewCustomer = {
+                        viewModel.navigateTo(
+                            AppScreen.RegisterCustomer(
+                                scannedTagValue = screen.tagValue,
+                                suggestedCustomerId = screen.customerId,
+                                suggestedCustomerName = screen.customerName
+                            )
+                        )
+                    },
+                    onScanAnotherPassbook = {
+                        viewModel.navigateTo(AppScreen.ScanNfc)
+                    }
+                )
+            }
             is AppScreen.RegisterCustomer -> {
                 RegisterCustomerScreen(
                     scannedTagValue = screen.scannedTagValue,
                     suggestedCustomerId = screen.suggestedCustomerId,
+                    suggestedCustomerName = screen.suggestedCustomerName,
                     onSaveCustomer = { id, name, photoUri, tagVal ->
                         viewModel.registerCustomer(id, name, photoUri, tagVal)
                     },

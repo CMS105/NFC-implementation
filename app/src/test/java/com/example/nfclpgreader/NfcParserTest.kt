@@ -2,10 +2,25 @@ package com.example.nfclpgreader
 
 import com.example.nfclpgreader.nfc.NfcParser
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Test
 
 class NfcParserTest {
+
+    @Test
+    fun testExtractLpgPassbookTextRecord() {
+        val textBlock = """
+            LPGPASSBOOK
+            ID:CUS004
+            NAME:Rajesh Nair
+        """.trimIndent()
+
+        val parsed = NfcParser.parseLpgPassbookTextRecord(textBlock)
+        assertNotNull(parsed)
+        assertEquals("CUS004", parsed?.customerId)
+        assertEquals("Rajesh Nair", parsed?.customerName)
+    }
 
     @Test
     fun testExtractCustomerIdFromStandardUrl() {

@@ -12,16 +12,25 @@ import android.os.Parcelable
 import java.nio.charset.Charset
 
 /**
+ * Structured container for extracted NDEF data from NTAG213 / NTAG215 passbook tags.
+ */
+data class ParsedNfcData(
+    val customerId: String,
+    val customerName: String? = null,
+    val rawTagValue: String
+)
+
+/**
  * Utility for parsing NDEF formatted 13.56 MHz NFC tags (e.g. NTAG213, NTAG215).
- * Extracts customer IDs from URI records, text records, or tag IDs safely.
+ * Parses NDEF text records (LPGPASSBOOK, ID:CUS..., NAME:...) and NDEF URI records.
  */
 object NfcParser {
 
     /**
-     * Extracts a customer ID from an incoming Intent (e.g. NDEF_DISCOVERED or TAG_DISCOVERED).
+     * Extracts structured NDEF data from an incoming Intent.
      */
     @Suppress("DEPRECATION")
-    fun extractCustomerIdFromIntent(intent: Intent): Result<String> {
+    fun parseIntentDetailed(intent: Intent): Result<ParsedNfcData> {
         val action = intent.action ?: return Result.failure(IllegalArgumentException("No NFC action found in intent"))
 
         if (action == NfcAdapter.ACTION_NDEF_DISCOVERED ||
@@ -36,13 +45,12 @@ object NfcParser {
 
             if (rawMessages != null && rawMessages.isNotEmpty()) {
                 val ndefMessage = rawMessages[0] as NdefMessage
-                return parseNdefMessage(ndefMessage)
+                return parseNdefMessageDetailed(ndefMessage)
             }
 
-            // If no NDEF message in intent extras, attempt reading directly from Tag tech
             val tag = intent.getParcelableExtra<Tag>(NfcAdapter.EXTRA_TAG)
             if (tag != null) {
-                return parseTag(tag)
+                return parseTagDetailed(tag)
             }
 
             return Result.failure(IllegalStateException("NFC tag contains no readable NDEF data"))
@@ -52,9 +60,16 @@ object NfcParser {
     }
 
     /**
-     * Parses a raw NFC Tag object.
+     * Extracts a customer ID string from an incoming Intent.
      */
-    fun parseTag(tag: Tag): Result<String> {
+    fun extractCustomerIdFromIntent(intent: Intent): Result<String> {
+        return parseIntentDetailed(intent).map { it.customerId }
+    }
+
+    /**
+     * Parses a raw NFC Tag object into structured NDEF data.
+     */
+    fun parseTagDetailed(tag: Tag): Result<ParsedNfcData> {
         val ndef = Ndef.get(tag) ?: return Result.failure(IllegalStateException("Tag is not NDEF formatted or supported"))
 
         return try {
@@ -65,7 +80,7 @@ object NfcParser {
             if (ndefMessage == null || ndefMessage.records.isEmpty()) {
                 Result.failure(IllegalStateException("NFC tag is empty or unformatted"))
             } else {
-                parseNdefMessage(ndefMessage)
+                parseNdefMessageDetailed(ndefMessage)
             }
         } catch (e: Exception) {
             Result.failure(IllegalStateException("Failed to read NFC tag: ${e.localizedMessage ?: "Unknown error"}"))
@@ -73,34 +88,83 @@ object NfcParser {
     }
 
     /**
-     * Parses an NdefMessage to find a Customer ID.
+     * Parses a raw NFC Tag object into Customer ID string.
      */
-    fun parseNdefMessage(message: NdefMessage): Result<String> {
+    fun parseTag(tag: Tag): Result<String> {
+        return parseTagDetailed(tag).map { it.customerId }
+    }
+
+    /**
+     * Parses an NdefMessage into structured ParsedNfcData.
+     */
+    fun parseNdefMessageDetailed(message: NdefMessage): Result<ParsedNfcData> {
         val records = message.records
         if (records.isEmpty()) {
             return Result.failure(IllegalStateException("Tag contains no NDEF records"))
         }
 
         for (record in records) {
-            val uri = record.toUri()
-            if (uri != null) {
-                val extracted = extractCustomerIdFromUri(uri)
-                if (extracted != null) {
-                    return Result.success(extracted)
+            // Check NDEF Text Record format: LPGPASSBOOK \n ID:CUS004 \n NAME:Rajesh Nair
+            val textPayload = parseTextRecord(record)
+            if (textPayload != null) {
+                val parsed = parseLpgPassbookTextRecord(textPayload)
+                if (parsed != null) {
+                    return Result.success(parsed)
+                }
+
+                val extractedId = extractCustomerIdFromString(textPayload)
+                if (extractedId != null) {
+                    return Result.success(ParsedNfcData(customerId = extractedId, rawTagValue = textPayload))
                 }
             }
 
-            // Fallback: Try reading text payload if record is text
-            val textPayload = parseTextRecord(record)
-            if (textPayload != null) {
-                val extracted = extractCustomerIdFromString(textPayload)
-                if (extracted != null) {
-                    return Result.success(extracted)
+            // Check NDEF URI Record format: https://example.com/customer/CUS001
+            val uri = record.toUri()
+            if (uri != null) {
+                val extractedId = extractCustomerIdFromUri(uri)
+                if (extractedId != null) {
+                    return Result.success(ParsedNfcData(customerId = extractedId, rawTagValue = uri.toString()))
                 }
             }
         }
 
-        return Result.failure(IllegalArgumentException("Tag data is invalid or unrecognized customer URL format"))
+        return Result.failure(IllegalArgumentException("Tag data is invalid or unrecognized passbook format"))
+    }
+
+    /**
+     * Parses an NdefMessage into Customer ID string.
+     */
+    fun parseNdefMessage(message: NdefMessage): Result<String> {
+        return parseNdefMessageDetailed(message).map { it.customerId }
+    }
+
+    /**
+     * Parses NDEF text block with LPGPASSBOOK format:
+     * LPGPASSBOOK
+     * ID:CUS004
+     * NAME:Rajesh Nair
+     */
+    fun parseLpgPassbookTextRecord(textBlock: String): ParsedNfcData? {
+        val cleaned = textBlock.trim()
+        if (cleaned.isEmpty()) return null
+
+        val idRegex = Regex("(?i)\\bID:\\s*([A-Za-z0-9_-]+)")
+        val nameRegex = Regex("(?i)\\bNAME:\\s*(.+)")
+
+        val idMatch = idRegex.find(cleaned)
+        val nameMatch = nameRegex.find(cleaned)
+
+        if (idMatch != null) {
+            val extractedId = idMatch.groupValues[1].uppercase()
+            val extractedName = nameMatch?.groupValues?.get(1)?.trim()
+            return ParsedNfcData(
+                customerId = extractedId,
+                customerName = if (!extractedName.isNullOrEmpty()) extractedName else null,
+                rawTagValue = cleaned
+            )
+        }
+
+        return null
     }
 
     /**
@@ -111,7 +175,6 @@ object NfcParser {
             return extractCustomerIdFromString(uri.toString())
         }
 
-        // 1. Check path segments for /customer/CUS001 or /passbook/CUS001
         val segments = uri.pathSegments
         if (segments.isNotEmpty()) {
             val lastSegment = segments.last()
@@ -119,14 +182,12 @@ object NfcParser {
             if (extracted != null) return extracted
         }
 
-        // 2. Check query parameter e.g., ?id=CUS001
         val idParam = uri.getQueryParameter("id") ?: uri.getQueryParameter("customerId")
         if (idParam != null) {
             val extracted = extractCustomerIdFromString(idParam)
             if (extracted != null) return extracted
         }
 
-        // 3. Fallback to full string matching
         return extractCustomerIdFromString(uri.toString())
     }
 
@@ -137,6 +198,12 @@ object NfcParser {
     fun extractCustomerIdFromString(raw: String): String? {
         val cleaned = raw.trim()
         if (cleaned.isEmpty()) return null
+
+        // Check ID:CUS... format first
+        val idFormatMatch = Regex("(?i)\\bID:\\s*([A-Za-z0-9_-]+)").find(cleaned)
+        if (idFormatMatch != null) {
+            return idFormatMatch.groupValues[1].uppercase()
+        }
 
         // Pattern 1: Matches explicit customer ID format e.g. CUS001, CUS123
         val cusPattern = Regex("(?i)\\bCUS\\d+\\b")

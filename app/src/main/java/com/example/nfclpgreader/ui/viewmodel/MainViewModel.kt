@@ -21,7 +21,8 @@ import kotlinx.coroutines.launch
 sealed class AppScreen {
     object Home : AppScreen()
     object ScanNfc : AppScreen()
-    data class RegisterCustomer(val scannedTagValue: String, val suggestedCustomerId: String) : AppScreen()
+    data class CustomerNotFound(val customerId: String, val customerName: String? = null, val tagValue: String = "") : AppScreen()
+    data class RegisterCustomer(val scannedTagValue: String, val suggestedCustomerId: String, val suggestedCustomerName: String? = null) : AppScreen()
     object SearchCustomer : AppScreen()
     data class CustomerDetails(val customer: Customer) : AppScreen()
 }
@@ -33,7 +34,7 @@ sealed class ScanUiState {
     data class Idle(val nfcStatus: NfcStatus = NfcStatus.Ready) : ScanUiState()
     object Reading : ScanUiState()
     data class Success(val customer: Customer) : ScanUiState()
-    data class NewTag(val tagValue: String, val extractedId: String) : ScanUiState()
+    data class NewTag(val tagValue: String, val extractedId: String, val customerName: String? = null) : ScanUiState()
     data class Error(val message: String) : ScanUiState()
 }
 
@@ -69,41 +70,52 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun processNfcIntent(intent: Intent) {
-        val result = NfcParser.extractCustomerIdFromIntent(intent)
-        handleExtractionResult(result, rawInput = intent.dataString.orEmpty())
-    }
-
-    fun processNfcTag(tag: Tag) {
-        val result = NfcParser.parseTag(tag)
-        handleExtractionResult(result, rawInput = tag.id.joinToString("") { "%02X".format(it) })
-    }
-
-    fun processRawInput(input: String) {
-        val extractedId = NfcParser.extractCustomerIdFromString(input)
-        if (extractedId != null) {
-            lookupTagOrNavigate(tagValue = input, extractedId = extractedId)
-        } else {
-            _uiState.value = ScanUiState.Error("Unable to decrypt NDEF payload or tag signature mismatch. The cylinder tag may be damaged, unformatted, or non-compliant.")
-        }
-    }
-
-    fun simulateError() {
-        _uiState.value = ScanUiState.Error("Unable to decrypt NDEF payload or tag signature mismatch. The cylinder tag may be damaged, unformatted, or non-compliant.")
-    }
-
-    private fun handleExtractionResult(result: Result<String>, rawInput: String) {
+        val result = NfcParser.parseIntentDetailed(intent)
         result.fold(
-            onSuccess = { customerId ->
-                lookupTagOrNavigate(tagValue = if (rawInput.isNotEmpty()) rawInput else customerId, extractedId = customerId)
+            onSuccess = { parsedData ->
+                lookupTagOrNavigate(tagValue = parsedData.rawTagValue, extractedId = parsedData.customerId, extractedName = parsedData.customerName)
             },
             onFailure = { throwable ->
-                val errorMessage = throwable.localizedMessage ?: "Unable to decrypt NDEF payload or tag signature mismatch. The cylinder tag may be damaged, unformatted, or non-compliant."
+                val errorMessage = throwable.localizedMessage ?: "Invalid or unreadable NFC tag scanned."
                 _uiState.value = ScanUiState.Error(errorMessage)
             }
         )
     }
 
-    private fun lookupTagOrNavigate(tagValue: String, extractedId: String) {
+    fun processNfcTag(tag: Tag) {
+        val result = NfcParser.parseTagDetailed(tag)
+        val rawTagId = tag.id.joinToString("") { "%02X".format(it) }
+        result.fold(
+            onSuccess = { parsedData ->
+                lookupTagOrNavigate(tagValue = if (parsedData.rawTagValue.isNotEmpty()) parsedData.rawTagValue else rawTagId, extractedId = parsedData.customerId, extractedName = parsedData.customerName)
+            },
+            onFailure = { throwable ->
+                val errorMessage = throwable.localizedMessage ?: "Invalid or unreadable NFC tag scanned."
+                _uiState.value = ScanUiState.Error(errorMessage)
+            }
+        )
+    }
+
+    fun processRawInput(input: String) {
+        val parsed = NfcParser.parseLpgPassbookTextRecord(input)
+        if (parsed != null) {
+            lookupTagOrNavigate(tagValue = input, extractedId = parsed.customerId, extractedName = parsed.customerName)
+            return
+        }
+
+        val extractedId = NfcParser.extractCustomerIdFromString(input)
+        if (extractedId != null) {
+            lookupTagOrNavigate(tagValue = input, extractedId = extractedId, extractedName = null)
+        } else {
+            _uiState.value = ScanUiState.Error("Invalid NFC Passbook. Unable to read valid customer identity data.")
+        }
+    }
+
+    fun simulateError() {
+        _uiState.value = ScanUiState.Error("Invalid NFC Passbook. Tag payload is unformatted or corrupted.")
+    }
+
+    private fun lookupTagOrNavigate(tagValue: String, extractedId: String, extractedName: String? = null) {
         _uiState.value = ScanUiState.Reading
         viewModelScope.launch {
             repository.getCustomerByTagValue(tagValue).fold(
@@ -117,11 +129,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                             _uiState.value = ScanUiState.Success(customer)
                         },
                         onFailure = {
-                            // Tag & ID are not registered -> Proceed to New Customer Registration form
-                            _uiState.value = ScanUiState.NewTag(tagValue = tagValue, extractedId = extractedId)
-                            _currentScreen.value = AppScreen.RegisterCustomer(
-                                scannedTagValue = tagValue,
-                                suggestedCustomerId = extractedId
+                            // Tag & ID are not registered -> Navigate to Customer Not Found Screen first
+                            _uiState.value = ScanUiState.NewTag(tagValue = tagValue, extractedId = extractedId, customerName = extractedName)
+                            _currentScreen.value = AppScreen.CustomerNotFound(
+                                customerId = extractedId,
+                                customerName = extractedName,
+                                tagValue = tagValue
                             )
                         }
                     )
@@ -145,6 +158,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 },
                 onFailure = {
                     _searchError.value = "Customer not found"
+                    _currentScreen.value = AppScreen.CustomerNotFound(
+                        customerId = sanitizedId,
+                        customerName = null,
+                        tagValue = ""
+                    )
                 }
             )
         }

@@ -73,6 +73,7 @@ import java.io.File
 fun RegisterCustomerScreen(
     scannedTagValue: String,
     suggestedCustomerId: String,
+    suggestedCustomerName: String? = null,
     onSaveCustomer: (customerId: String, fullName: String, photoUriStr: String, tagValue: String) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
@@ -80,7 +81,7 @@ fun RegisterCustomerScreen(
     val context = LocalContext.current
 
     var customerIdInput by remember { mutableStateOf(suggestedCustomerId) }
-    var fullNameInput by remember { mutableStateOf("") }
+    var fullNameInput by remember { mutableStateOf(suggestedCustomerName.orEmpty()) }
     var selectedPhotoUri by remember { mutableStateOf<Uri?>(null) }
     var cameraTempUri by remember { mutableStateOf<Uri?>(null) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -202,7 +203,6 @@ fun RegisterCustomerScreen(
                                     cameraTempUri = uri
                                     cameraLauncher.launch(uri)
                                 } catch (_: Exception) {
-                                    // Fallback to gallery if camera fails
                                     galleryLauncher.launch("image/*")
                                 }
                             },
