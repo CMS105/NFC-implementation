@@ -28,7 +28,7 @@ object SampleCustomerData {
         ),
         Customer(
             customerId = "CUS004",
-            fullName = "SHARMA SHREENIDHI",
+            fullName = "SHARMA",
             photoResId = R.drawable.photo_cus004,
             uniqueNfcCode = "MAUCXTJHHH"
         )

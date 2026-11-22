@@ -16,7 +16,7 @@ class AppDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
 
     companion object {
         private const val DATABASE_NAME = "gasseva_nfc.db"
-        private const val DATABASE_VERSION = 3
+        private const val DATABASE_VERSION = 4
 
         private const val TABLE_CUSTOMERS = "customers"
         private const val COL_CUSTOMER_ID = "customerId"
@@ -55,7 +55,7 @@ class AppDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
             Tuple4("CUS001", "M S CHIRAG", "YHWP84PENQ", R.drawable.photo_cus001),
             Tuple4("CUS002", "DIGANTH", "M4UP8H5PE8", R.drawable.photo_cus002),
             Tuple4("CUS003", "ISIRI", "XGE5SWAEM4", 0),
-            Tuple4("CUS004", "SHARMA SHREENIDHI", "MAUCXTJHHH", R.drawable.photo_cus004)
+            Tuple4("CUS004", "SHARMA", "MAUCXTJHHH", R.drawable.photo_cus004)
         )
 
         for ((id, name, code, drawableId) in initialCustomers) {
@@ -82,7 +82,6 @@ class AppDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
             } catch (_: Exception) {}
         }
         if (oldVersion < 3) {
-            // Update photo path references for CUS001, CUS002, CUS004
             val updates = listOf(
                 Pair("CUS001", "res://${R.drawable.photo_cus001}"),
                 Pair("CUS002", "res://${R.drawable.photo_cus002}"),
@@ -92,6 +91,10 @@ class AppDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
                 val cv = ContentValues().apply { put(COL_PHOTO_PATH, path) }
                 db.update(TABLE_CUSTOMERS, cv, "$COL_CUSTOMER_ID = ?", arrayOf(id))
             }
+        }
+        if (oldVersion < 4) {
+            val cv = ContentValues().apply { put(COL_CUSTOMER_NAME, "SHARMA") }
+            db.update(TABLE_CUSTOMERS, cv, "$COL_CUSTOMER_ID = ?", arrayOf("CUS004"))
         }
     }
 
