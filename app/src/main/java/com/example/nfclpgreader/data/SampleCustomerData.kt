@@ -17,7 +17,7 @@ object SampleCustomerData {
         Customer(
             customerId = "CUS002",
             fullName = "DIGANTH",
-            photoResId = 0,
+            photoResId = R.drawable.photo_cus002,
             uniqueNfcCode = "M4UP8H5PE8"
         ),
         Customer(
@@ -29,7 +29,7 @@ object SampleCustomerData {
         Customer(
             customerId = "CUS004",
             fullName = "SHARMA SHREENIDHI",
-            photoResId = 0,
+            photoResId = R.drawable.photo_cus004,
             uniqueNfcCode = "MAUCXTJHHH"
         )
     )

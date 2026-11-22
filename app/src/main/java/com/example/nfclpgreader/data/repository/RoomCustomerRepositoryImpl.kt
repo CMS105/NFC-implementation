@@ -130,7 +130,7 @@ class RoomCustomerRepositoryImpl(
     }
 
     private fun mapEntityToCustomer(entity: CustomerEntity): Customer {
-        val resDrawableId = getDrawableIdFromPath(entity.photoPath)
+        val resDrawableId = getDrawableIdFromPath(entity)
         return Customer(
             customerId = entity.customerId,
             fullName = entity.customerName,
@@ -140,9 +140,13 @@ class RoomCustomerRepositoryImpl(
         )
     }
 
-    private fun getDrawableIdFromPath(path: String): Int {
+    private fun getDrawableIdFromPath(entity: CustomerEntity): Int {
+        val id = entity.customerId.uppercase()
+        val path = entity.photoPath.lowercase()
         return when {
-            path.contains("photo_cus001") || path.endsWith("${R.drawable.photo_cus001}") -> R.drawable.photo_cus001
+            id == "CUS001" || path.contains("cus001") -> R.drawable.photo_cus001
+            id == "CUS002" || path.contains("cus002") -> R.drawable.photo_cus002
+            id == "CUS004" || path.contains("cus004") -> R.drawable.photo_cus004
             else -> 0
         }
     }

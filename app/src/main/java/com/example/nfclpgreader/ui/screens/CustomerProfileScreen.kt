@@ -139,7 +139,8 @@ fun CustomerProfileScreen(
                             val imageResId = when {
                                 customer.photoResId != 0 -> customer.photoResId
                                 customer.customerId.uppercase() == "CUS001" -> R.drawable.photo_cus001
-                                customer.photoPath.contains("photo_cus001") -> R.drawable.photo_cus001
+                                customer.customerId.uppercase() == "CUS002" -> R.drawable.photo_cus002
+                                customer.customerId.uppercase() == "CUS004" -> R.drawable.photo_cus004
                                 else -> 0
                             }
 
@@ -162,7 +163,7 @@ fun CustomerProfileScreen(
                                         .clip(CircleShape)
                                 )
                             } else {
-                                // Neutral Avatar Placeholder
+                                // Neutral Avatar Placeholder for CUS003 / Unregistered
                                 Image(
                                     painter = painterResource(id = R.drawable.ic_avatar_ravi),
                                     contentDescription = "Neutral Avatar Placeholder",

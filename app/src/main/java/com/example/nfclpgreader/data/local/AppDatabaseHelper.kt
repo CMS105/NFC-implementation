@@ -16,7 +16,7 @@ class AppDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
 
     companion object {
         private const val DATABASE_NAME = "gasseva_nfc.db"
-        private const val DATABASE_VERSION = 2
+        private const val DATABASE_VERSION = 3
 
         private const val TABLE_CUSTOMERS = "customers"
         private const val COL_CUSTOMER_ID = "customerId"
@@ -50,12 +50,12 @@ class AppDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
             """.trimIndent()
         )
 
-        // Prepopulate supplied CSV customer records
+        // Prepopulate supplied CSV customer records & photos
         val initialCustomers = listOf(
             Tuple4("CUS001", "M S CHIRAG", "YHWP84PENQ", R.drawable.photo_cus001),
-            Tuple4("CUS002", "DIGANTH", "M4UP8H5PE8", 0),
+            Tuple4("CUS002", "DIGANTH", "M4UP8H5PE8", R.drawable.photo_cus002),
             Tuple4("CUS003", "ISIRI", "XGE5SWAEM4", 0),
-            Tuple4("CUS004", "SHARMA SHREENIDHI", "MAUCXTJHHH", 0)
+            Tuple4("CUS004", "SHARMA SHREENIDHI", "MAUCXTJHHH", R.drawable.photo_cus004)
         )
 
         for ((id, name, code, drawableId) in initialCustomers) {
@@ -65,13 +65,13 @@ class AppDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
                 put(COL_PHOTO_PATH, if (drawableId != 0) "res://$drawableId" else "")
                 put(COL_UNIQUE_NFC_CODE, code)
             }
-            db.insertWithOnConflict(TABLE_CUSTOMERS, null, cvCust, SQLiteDatabase.CONFLICT_IGNORE)
+            db.insertWithOnConflict(TABLE_CUSTOMERS, null, cvCust, SQLiteDatabase.CONFLICT_REPLACE)
 
             val cvTag = ContentValues().apply {
                 put(COL_TAG_VALUE, "TAG_$id")
                 put(COL_CUSTOMER_ID, id)
             }
-            db.insertWithOnConflict(TABLE_TAGS, null, cvTag, SQLiteDatabase.CONFLICT_IGNORE)
+            db.insertWithOnConflict(TABLE_TAGS, null, cvTag, SQLiteDatabase.CONFLICT_REPLACE)
         }
     }
 
@@ -79,8 +79,18 @@ class AppDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
         if (oldVersion < 2) {
             try {
                 db.execSQL("ALTER TABLE $TABLE_CUSTOMERS ADD COLUMN $COL_UNIQUE_NFC_CODE TEXT UNIQUE")
-            } catch (_: Exception) {
-                // If column exists or error, fall through safely
+            } catch (_: Exception) {}
+        }
+        if (oldVersion < 3) {
+            // Update photo path references for CUS001, CUS002, CUS004
+            val updates = listOf(
+                Pair("CUS001", "res://${R.drawable.photo_cus001}"),
+                Pair("CUS002", "res://${R.drawable.photo_cus002}"),
+                Pair("CUS004", "res://${R.drawable.photo_cus004}")
+            )
+            for ((id, path) in updates) {
+                val cv = ContentValues().apply { put(COL_PHOTO_PATH, path) }
+                db.update(TABLE_CUSTOMERS, cv, "$COL_CUSTOMER_ID = ?", arrayOf(id))
             }
         }
     }
