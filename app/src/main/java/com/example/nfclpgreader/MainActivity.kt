@@ -52,6 +52,7 @@ class MainActivity : ComponentActivity() {
 
         val action = intent?.action
         if (isNfcIntent(action)) {
+            viewModel.navigateTo(AppScreen.ScanNfc)
             viewModel.processNfcIntent(intent)
         }
 
@@ -77,21 +78,20 @@ class MainActivity : ComponentActivity() {
         val nfcStatus = nfcManager.getNfcStatus()
         viewModel.updateNfcStatus(nfcStatus)
 
-        if (viewModel.currentScreen.value is AppScreen.ScanNfc) {
-            enableNfcReaderMode()
-        }
+        // Always enable Reader Mode & Foreground Dispatch when activity is in foreground
+        enableNfcReaderMode()
     }
 
     override fun onPause() {
         super.onPause()
-        nfcManager.disableReaderMode(this)
-        nfcManager.disableForegroundDispatch(this)
+        disableNfcReaderMode()
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
         if (isNfcIntent(intent.action)) {
+            viewModel.navigateTo(AppScreen.ScanNfc)
             viewModel.processNfcIntent(intent)
         }
     }
@@ -99,6 +99,7 @@ class MainActivity : ComponentActivity() {
     fun enableNfcReaderMode() {
         nfcManager.enableReaderMode(this) { tag ->
             runOnUiThread {
+                viewModel.navigateTo(AppScreen.ScanNfc)
                 viewModel.processNfcTag(tag)
             }
         }
@@ -141,16 +142,8 @@ fun GasSevaApp(
     var celebrated by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    // Manage NFC Reader Mode activation dynamically based on current screen
-    LaunchedEffect(currentScreen) {
-        if (currentScreen is AppScreen.ScanNfc) {
-            activity.enableNfcReaderMode()
-        } else {
-            activity.disableNfcReaderMode()
-        }
-    }
-
     DisposableEffect(Unit) {
+        activity.enableNfcReaderMode()
         onDispose {
             activity.disableNfcReaderMode()
         }

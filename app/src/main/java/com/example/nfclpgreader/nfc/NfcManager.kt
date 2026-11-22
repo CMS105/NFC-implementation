@@ -36,7 +36,7 @@ class NfcManager(private val context: Context) {
     }
 
     /**
-     * Enables Reader Mode for modern, high-performance foreground NFC scanning without system sounds.
+     * Enables Reader Mode for modern, high-performance foreground NFC scanning without external system sounds/popups.
      */
     fun enableReaderMode(activity: Activity, onTagDiscovered: (Tag) -> Unit) {
         val adapter = nfcAdapter ?: return
@@ -45,7 +45,8 @@ class NfcManager(private val context: Context) {
         val flags = NfcAdapter.FLAG_READER_NFC_A or
                 NfcAdapter.FLAG_READER_NFC_B or
                 NfcAdapter.FLAG_READER_NFC_F or
-                NfcAdapter.FLAG_READER_NFC_V
+                NfcAdapter.FLAG_READER_NFC_V or
+                NfcAdapter.FLAG_READER_NO_PLATFORM_SOUNDS
 
         adapter.enableReaderMode(activity, { tag ->
             onTagDiscovered(tag)
@@ -60,7 +61,7 @@ class NfcManager(private val context: Context) {
     }
 
     /**
-     * Enables traditional Foreground Dispatch as fallback.
+     * Enables traditional Foreground Dispatch as fallback to prevent external system notifications.
      */
     @Suppress("DEPRECATION")
     fun enableForegroundDispatch(activity: Activity) {
@@ -78,11 +79,9 @@ class NfcManager(private val context: Context) {
         }
 
         val pendingIntent = PendingIntent.getActivity(activity, 0, intent, pendingIntentFlags)
-        val ndefFilter = IntentFilter(NfcAdapter.ACTION_NDEF_DISCOVERED).apply {
-            try {
-                addDataType("*/*")
-            } catch (_: Exception) {}
-        }
+
+        // Catch all NDEF, TECH, and TAG discovery intents unconditionally
+        val ndefFilter = IntentFilter(NfcAdapter.ACTION_NDEF_DISCOVERED)
         val techFilter = IntentFilter(NfcAdapter.ACTION_TECH_DISCOVERED)
         val tagFilter = IntentFilter(NfcAdapter.ACTION_TAG_DISCOVERED)
 
