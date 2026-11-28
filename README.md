@@ -154,4 +154,4 @@ This is a planned change and is not part of the current implementation. The READ
 ## Team Members
 
 - **Digshu** — [LinkedIn Profile](https://www.linkedin.com/in/digshu/)
-- **Isiri**
+- **Isiri** — [LinkedIn Profile](https://www.linkedin.com/in/isiri-r-ram/)
