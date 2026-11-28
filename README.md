@@ -138,6 +138,12 @@ The output APK is generated at `app/build/outputs/apk/debug/app-debug.apk`. The 
 
 ---
 
+## Planned Enhancement
+
+The current manual lookup workflow uses the Customer ID. A planned enhancement is to replace this input with the customer's **10-character security code**, allowing staff to retrieve the corresponding customer record using that code instead.
+
+This is a planned change and is not part of the current implementation. The README will be updated again when the feature is implemented and verified.
+
 ## Project Attribution
 
 **Concept and Development:** M S Chirag  
