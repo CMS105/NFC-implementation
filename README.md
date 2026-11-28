@@ -155,5 +155,3 @@ This is a planned change and is not part of the current implementation. The READ
 
 - **Digshu** — [LinkedIn Profile](https://www.linkedin.com/in/digshu/)
 - **Isiri**
-
-## Connect
