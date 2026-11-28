@@ -8,10 +8,10 @@ GasSeva is a native Android application designed for LPG distributors and delive
 
 - **Offline Local SQLite Database:** Complete offline functionality backed by `AppDatabaseHelper` extending `SQLiteOpenHelper`.
 - **NTAG213 NFC Passbook Reading:** Parses NDEF text records over 13.56 MHz ISO 14443-A links without platform popup interferences.
-- **Strict Cryptographic Security Code Matching:** Enforces exact, case-sensitive matching between the NFC tag security code and the database `uniqueNfcCode`.
-- **Manual Security Code Lookup:** Allows authorized staff to search customer records manually by entering their assigned 10-character Security Code (e.g. `YHWP84PENQ`).
+- **NFC Security-Code Comparison:** Compares the code read from the NFC payload with the code stored for the matching Customer ID using an exact, case-sensitive string comparison. This is a data check, not cryptographic tag authentication.
+- **Manual Customer Lookup:** Allows staff to search customer records by entering the Customer ID (e.g. `CUS001`). Manual lookup does not search by the 10-character security code.
 - **Customer Registration & Persistent Photo Storage:** Full customer registration flow supporting Camera & Gallery photo capture stored locally at `context.filesDir/customer_photos/`.
-- **Permanent Creator Attribution & Integrity:** Native embedded read-only creator identity (`M S Chirag`, `CMS105`, `© 2026 M S Chirag`) with Ed25519 digital signature verification.
+- **Project Attribution:** The application includes creator and project attribution information in its native source code and About interface.
 
 ---
 
@@ -23,7 +23,7 @@ GasSeva is a native Android application designed for LPG distributors and delive
 - **Database:** Local SQLite (`SQLiteOpenHelper` with parameterized queries)
 - **NFC Engine:** Android NFC API (`NfcAdapter.enableReaderMode` & `enableForegroundDispatch`)
 - **Min SDK:** 26 (Android 8.0) | **Target SDK:** 37
-- **Gradle & AGP:** Gradle 9.6.0 & AGP 9.5.3
+- **Gradle & AGP:** Gradle 9.6.0 & Android Gradle Plugin 9.5.1
 
 ---
 
@@ -39,7 +39,7 @@ app/src/main/java/com/example/nfclpgreader/
 │   └── repository/CustomerRepository.kt  # Repository Abstraction & Implementation
 ├── identity/
 │   ├── CreatorIdentity.kt                # Read-Only Native Project Attribution
-│   ├── CreatorManifestVerifier.kt        # Ed25519 Cryptographic Manifest Verifier
+│   ├── CreatorManifestVerifier.kt        # Creator metadata consistency checks
 │   └── LicenseManager.kt                 # Device License Activation Architecture
 ├── nfc/
 │   ├── NfcManager.kt                     # NFC Hardware ReaderMode Lifecycle
@@ -74,31 +74,40 @@ CODE:YHWP84PENQ
 
 ## 🔄 Verification & Lookup Workflows
 
-### 1. Manual Security Code Lookup Flow
-```
-Manual Lookup Input (Security Code: YHWP84PENQ)
-       │
-       ▼
-Database Query (uniqueNfcCode = 'YHWP84PENQ')
-       │
-       ├──[Found]──► Display Customer Profile
-       │
-       └──[Not Found]──► Display "Customer Not Found"
+### 1. Manual Customer ID Lookup
+
+The manual search screen accepts a Customer ID such as `CUS001`. It does not provide a security-code search.
+
+```text
+Manual Input (Customer ID: CUS001)
+       |
+       v
+Database Lookup (customerId = 'CUS001')
+       |
+       +--[Found]----> Display Customer Profile
+       |
+       +--[Not Found]-> Display "Customer Not Found"
 ```
 
-### 2. NFC Passbook Verification Flow
-```
-Tap NTAG213 Tag ──► Parse NDEF Payload (Extract ID & CODE)
-                          │
-                          ▼
-             Database Lookup by Customer ID
-                          │
-                          ▼
-            Compare Tag CODE vs. DB uniqueNfcCode
-                          │
-                          ├──[Exact Match]──► Verified -> Open Profile
-                          │
-                          └──[Code Mismatch / Missing]──► Verification Failed Error
+### 2. NFC Passbook Verification
+
+The NFC workflow extracts the Customer ID and security code from the NDEF payload, retrieves the customer record by Customer ID, and compares the tag code with the stored code.
+
+```text
+Tap NTAG213 Tag
+       |
+       v
+Parse NDEF Payload (Customer ID and CODE)
+       |
+       v
+Retrieve Customer by Customer ID
+       |
+       v
+Compare Tag CODE with stored uniqueNfcCode
+       |
+       +--[Exact, case-sensitive match]--> Display Customer Profile
+       |
+       +--[Missing or different code]----> Verification Failed
 ```
 
 ---
@@ -109,7 +118,7 @@ Tap NTAG213 Tag ──► Parse NDEF Payload (Extract ID & CODE)
 ```bash
 ./gradlew app:assembleDebug
 ```
-The output APK will be generated at `app/build/outputs/apk/debug/app-debug.apk` and copied to `GAS_NFC_CMS.apk` in the project root directory.
+The output APK is generated at `app/build/outputs/apk/debug/app-debug.apk`. The repository does not currently define a build step that copies this APK to the project root.
 
 ### Run Unit Tests
 ```bash
@@ -120,6 +129,16 @@ The output APK will be generated at `app/build/outputs/apk/debug/app-debug.apk` 
 
 ## 🔒 Security Architecture & Known Limitations
 
-- **Parameterized SQLite Queries:** All database lookups use `?` parameter bindings to eliminate SQL injection risks.
-- **Privacy Protection:** Customer security codes are strictly hidden from customer-facing profile screens and error logs.
-- **Static NDEF Payload Limitation Notice:** NTAG213 tags contain static NDEF payloads. Verification confirms that the code written on the tag matches the database record for that customer ID. True hardware anti-cloning or cryptographic chip authentication requires hardware-level 3DES/AES dynamic counter tags (e.g. NTAG 424 DNA).
+- **Local Data Storage:** Customer records are stored in an on-device SQLite database through `SQLiteOpenHelper`. Database queries use selection arguments for lookups.
+- **NFC Code Comparison:** The app performs an exact, case-sensitive comparison between the security code parsed from the NFC payload and the code stored for the identified customer. This comparison does not provide cryptographic authentication.
+- **Creator Metadata Check:** `CreatorManifestVerifier` computes a SHA-256 digest but only checks whether the computed value is non-empty; it does not compare that digest with the declared expected value. It is not a digital-signature or tamper-detection mechanism.
+- **License Prototype:** `LicenseManager` is configured for development mode. Its activation-code check only tests for the `GASSEVA-` prefix and is not production-grade license validation.
+- **Static NDEF Limitation:** NTAG213 tags store static NDEF data that can be copied. Matching a stored code helps detect mismatched records but does not establish that a physical tag is genuine. Stronger anti-cloning protection requires compatible tags and a cryptographic authentication design, such as NTAG 424 DNA.
+- **Offline Operation:** Customer lookup and NFC comparison use the local database; the README does not describe a cloud synchronization service.
+
+---
+
+## Project Attribution
+
+**Concept and Development:** M S Chirag  
+**Creator ID:** `CMS105`
