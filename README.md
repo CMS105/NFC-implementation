@@ -149,11 +149,11 @@ This is a planned change and is not part of the current implementation. The READ
 **Concept and Development:** M S Chirag  
 **Creator ID:** `CMS105`
 
+[LinkedIn — M S Chirag](https://www.linkedin.com/in/m-s-chirag-3466a4383/)
+
 ## Team Members
 
 - **Digshu** — [LinkedIn Profile](https://www.linkedin.com/in/digshu/)
 - **Isiri**
-
-[LinkedIn — M S Chirag](https://www.linkedin.com/in/m-s-chirag-3466a4383/)
 
 ## Connect
