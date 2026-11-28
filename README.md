@@ -154,6 +154,6 @@ This is a planned change and is not part of the current implementation. The READ
 - **Digshu** — [LinkedIn Profile](https://www.linkedin.com/in/digshu/)
 - **Isiri**
 
-## Connect
-
 [LinkedIn — M S Chirag](https://www.linkedin.com/in/m-s-chirag-3466a4383/)
+
+## Connect
